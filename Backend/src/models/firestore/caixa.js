@@ -225,5 +225,76 @@ export const deletar = async (unidadeId, caixaId) => {
   } catch (error) {
     console.error('Erro detalhado ao deletar caixa:', error);
     throw error;
-  }
-};
+    }
+  };
+  
+  export const atualizarTroco = async (unidadeId, caixaId, movimentacaoTroco) => {
+    try {
+      console.log(`Atualizando troco do caixa ${caixaId} da unidade ${unidadeId}`);
+        
+        // Validações
+        if (!unidadeId || !caixaId) {
+          throw new Error('IDs de unidade e caixa são obrigatórios');
+        }
+        
+        const caixaRef = db.collection('unidades').doc(unidadeId).collection('caixas').doc(caixaId);
+        
+        const caixaDoc = await caixaRef.get();
+        if (!caixaDoc.exists) {
+          console.log(`Caixa ${caixaId} não encontrado`);
+          throw new Error('Caixa não encontrado');
+        }
+    
+        // Buscar o troco atual do caixa
+        const caixa = caixaDoc.data();
+        const trocoAtual = caixa.troco || {};
+        
+        // Atualize o troco com os valores recebidos
+        // Se as denominações são adicionadas ou removidas
+        const trocoAtualizado = { ...trocoAtual };
+        
+        Object.entries(movimentacaoTroco.denominacoesRecebidas || {}).forEach(([valor, quantidade]) => {
+          const valorFloat = parseFloat(valor);
+          trocoAtualizado[valorFloat] = (trocoAtualizado[valorFloat] || 0) + parseInt(quantidade);
+        });
+        
+        // Se tiver troco a dar, diminuir do caixa
+        Object.entries(movimentacaoTroco.denominacoesTroco || {}).forEach(([valor, quantidade]) => {
+          const valorFloat = parseFloat(valor);
+          trocoAtualizado[valorFloat] = Math.max(0, (trocoAtualizado[valorFloat] || 0) - parseInt(quantidade));
+        });
+    
+        // Atualizar no banco de dados
+        await caixaRef.update({
+          troco: trocoAtualizado,
+          updatedAt: new Date()
+        });
+    
+        return trocoAtualizado;
+      } catch (error) {
+        console.error('Erro ao atualizar troco:', error);
+        throw error;
+      }
+    };
+    
+    // Buscar o troco disponível
+    export const buscarTroco = async (unidadeId, caixaId) => {
+      try {
+        if (!unidadeId || !caixaId) {
+          throw new Error('IDs de unidade e caixa são obrigatórios');
+        }
+        
+        const caixaRef = db.collection('unidades').doc(unidadeId).collection('caixas').doc(caixaId);
+        const caixaDoc = await caixaRef.get();
+        
+        if (!caixaDoc.exists) {
+          return null;
+        }
+        
+        const caixa = caixaDoc.data();
+        return caixa.troco || {};
+      } catch (error) {
+        console.error('Erro ao buscar troco:', error);
+        throw error;
+      }
+    };

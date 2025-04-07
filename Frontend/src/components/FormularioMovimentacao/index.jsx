@@ -1,3 +1,4 @@
+// src/components/FormularioMovimentacao/index.jsx
 import { 
   Radio, 
   RadioGroup, 
@@ -11,24 +12,142 @@ import {
   Box,
   FormHelperText,
   InputAdornment,
-  Divider
+  Divider,
+  Collapse
 } from '@mui/material';
+import { useState, useEffect } from 'react';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
+import CoinCounter from '../CoinCounter';
 
 const FormularioMovimentacao = ({ 
   newMovement, 
   setNewMovement, 
   paymentMethods, 
   onAddMovement,
-  loading 
+  loading,
+  unidadeId,
+  caixaId,
+  api 
 }) => {
+  // Novo estado para controlar a visibilidade do contador de moedas
+  const [showCoinCounter, setShowCoinCounter] = useState(false);
+  
+  // Estado para armazenar o troco disponível no caixa
+  const [trocoDisponivel, setTrocoDisponivel] = useState({});
+  
+  // Estado para armazenar a informação do troco da transação atual
+  const [trocoInfo, setTrocoInfo] = useState({
+    receivedAmount: 0,
+    change: 0,
+    denominations: {}
+  });
+  
+  // Log para diagnóstico inicial
+  useEffect(() => {
+    console.log("FormularioMovimentacao montado com props:", {
+      unidadeId,
+      caixaId,
+      apiDisponivel: !!api,
+      paymentMethods
+    });
+    
+    // Verificar quais métodos API estão disponíveis
+    if (api) {
+      console.log("API methods disponíveis:", Object.keys(api));
+      console.log("getTroco disponível:", typeof api.getTroco === 'function');
+      console.log("updateTroco disponível:", typeof api.updateTroco === 'function');
+    }
+  }, []);
+  
+  // Buscar o troco disponível quando o componente montar ou quando mudar de caixa
+  useEffect(() => {
+    if (unidadeId && caixaId && api && api.getTroco) {
+      console.log("Buscando troco para unidade", unidadeId, "e caixa", caixaId);
+      fetchTrocoDisponivel();
+    } else {
+      console.warn("Não foi possível buscar troco:", {
+        unidadeId: !!unidadeId,
+        caixaId: !!caixaId,
+        api: !!api,
+        getTroco: api && !!api.getTroco
+      });
+    }
+  }, [unidadeId, caixaId, api]);
+  
+  // Buscar o troco disponível no caixa
+  const fetchTrocoDisponivel = async () => {
+    try {
+      console.log("Chamando api.getTroco(", unidadeId, ",", caixaId, ")");
+      const response = await api.getTroco(unidadeId, caixaId);
+      console.log("Resposta de getTroco:", response);
+      
+      if (response.success) {
+        setTrocoDisponivel(response.data || {});
+        console.log("Troco disponível atualizado:", response.data);
+      } else {
+        console.error("Erro ao buscar troco:", response.error);
+      }
+    } catch (error) {
+      console.error("Exceção ao buscar troco:", error);
+    }
+  };
+
+  // Atualizar a visibilidade do contador de moedas quando o método de pagamento mudar
+  useEffect(() => {
+    console.log("Payment method mudou para:", newMovement.paymentMethod);
+    console.log("É dinheiro?", newMovement.paymentMethod === 'dinheiro');
+    
+    // Verificar se existe 'dinheiro' nos métodos de pagamento
+    const hasDinheiro = paymentMethods.some(m => m.id === 'dinheiro');
+    console.log("'dinheiro' existe nos métodos de pagamento:", hasDinheiro);
+    
+    setShowCoinCounter(newMovement.paymentMethod === 'dinheiro');
+  }, [newMovement.paymentMethod, paymentMethods]);
+  
+  // Efeito adicional para verificar quando o valor muda
+  useEffect(() => {
+    console.log("Valor atualizado:", newMovement.amount);
+    console.log("Condição do contador:", {
+      showCoinCounter,
+      paymentIsDinheiro: newMovement.paymentMethod === 'dinheiro',
+      hasAmount: newMovement.amount > 0,
+      shouldShow: showCoinCounter && newMovement.amount > 0
+    });
+  }, [newMovement.amount, showCoinCounter]);
+
   // Valida se os campos obrigatórios estão preenchidos
   const isFormValid = () => {
     return (
       newMovement.paymentMethod && 
       newMovement.amount && 
-      newMovement.paymentStatus
+      newMovement.paymentStatus && 
+      // Se for dinheiro, verificar se o valor recebido é suficiente
+      (newMovement.paymentMethod !== 'dinheiro' || trocoInfo.receivedAmount >= parseFloat(newMovement.amount))
     );
+  };
+
+  // Handler para processar o cálculo de troco
+  const handleCalculateChange = (info) => {
+    console.log("Troco calculado:", info);
+    setTrocoInfo(info);
+  };
+
+  // Handler para quando o usuário clica em adicionar movimentação
+  const handleAddClick = () => {
+    // Se for pagamento em dinheiro, incluir as informações de troco
+    if (newMovement.paymentMethod === 'dinheiro') {
+      const movementWithChange = {
+        ...newMovement,
+        trocoInfo: {
+          valorRecebido: trocoInfo.receivedAmount,
+          troco: trocoInfo.change,
+          denominacoesRecebidas: trocoInfo.denominations
+        }
+      };
+      onAddMovement(movementWithChange);
+    } else {
+      onAddMovement(newMovement);
+    }
   };
 
   return (
@@ -41,6 +160,16 @@ const FormularioMovimentacao = ({
       borderRadius: 1,
       border: '1px solid #e0e0e0'
     }}>
+      {/* Debug area - remova após identificar o problema */}
+      <Box sx={{ display: 'none' }}>
+        <div>unidadeId: {unidadeId}</div>
+        <div>caixaId: {caixaId}</div>
+        <div>API disponível: {api ? 'Sim' : 'Não'}</div>
+        <div>Payment Method: {newMovement.paymentMethod}</div>
+        <div>showCoinCounter: {showCoinCounter ? 'Sim' : 'Não'}</div>
+        <div>hasAmount: {newMovement.amount > 0 ? 'Sim' : 'Não'}</div>
+      </Box>
+
       {/* Tipo de Movimentação: Entrada ou Saída */}
       <FormControl>
         <FormLabel id="movement-type-label">Tipo de Movimentação</FormLabel>
@@ -170,11 +299,25 @@ const FormularioMovimentacao = ({
           </FormControl>
         </>
       )}
+      
+      {/* Contador de Moedas (aparece quando forma de pagamento é dinheiro) */}
+      <Box sx={{ border: '1px dashed #ccc', p: 1, display: showCoinCounter && newMovement.amount > 0 ? 'block' : 'none' }}>
+        <p>Debug: Contador de Moedas deveria aparecer aqui (showCoinCounter: {String(showCoinCounter)}, amount {'>'} 0: {String(newMovement.amount > 0)})</p>
+      </Box>
+      
+      <Collapse in={showCoinCounter && newMovement.amount > 0}>
+        <CoinCounter
+          visible={showCoinCounter && newMovement.amount > 0}
+          totalAmount={parseFloat(newMovement.amount) || 0}
+          onCalculateChange={handleCalculateChange}
+          currentCoinsInDrawer={trocoDisponivel}
+        />
+      </Collapse>
   
       {/* Botão de Adicionar */}
       <Button
         variant="contained"
-        onClick={onAddMovement}
+        onClick={handleAddClick}
         startIcon={<AddCircleIcon />}
         disabled={!isFormValid() || loading}
         sx={{ 

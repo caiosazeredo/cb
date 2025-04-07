@@ -1,4 +1,13 @@
-import { criar, buscarPorUnidade, buscarPorId, deletar, atualizar } from '../models/firestore/caixa.js';
+// src/controllers/caixaController.js
+import { 
+  criar, 
+  buscarPorUnidade, 
+  buscarPorId, 
+  deletar, 
+  atualizar,
+  atualizarTroco,
+  buscarTroco 
+} from '../models/firestore/caixa.js';
 
 export const criarCaixa = async (req, res) => {
   try {
@@ -57,7 +66,7 @@ export const listarCaixas = async (req, res) => {
   }
 };
 
-// Novo método para buscar caixa por ID
+// Método para buscar caixa por ID
 export const buscarCaixa = async (req, res) => {
   try {
     const { unidadeId, caixaId } = req.params;
@@ -159,6 +168,61 @@ export const atualizarCaixa = async (req, res) => {
     }
     res.status(500).json({
       error: 'Erro interno ao atualizar caixa',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// Funções relacionadas ao troco
+export const atualizarTrocoCaixa = async (req, res) => {
+  try {
+    const { unidadeId, caixaId } = req.params;
+    const dadosTroco = req.body;
+    
+    console.log(`Requisição para atualizar troco do caixa ${caixaId} da unidade ${unidadeId}`);
+    
+    // Validações
+    if (!unidadeId || !caixaId) {
+      return res.status(400).json({
+        error: 'IDs de unidade e caixa são obrigatórios'
+      });
+    }
+    
+    const trocoAtualizado = await atualizarTroco(unidadeId, caixaId, dadosTroco);
+    
+    res.json({
+      message: 'Troco atualizado com sucesso',
+      troco: trocoAtualizado
+    });
+  } catch (error) {
+    console.error('Erro ao atualizar troco:', error);
+    res.status(500).json({
+      error: 'Erro interno ao atualizar troco',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+export const buscarTrocoCaixa = async (req, res) => {
+  try {
+    const { unidadeId, caixaId } = req.params;
+    
+    console.log(`Requisição para buscar troco do caixa ${caixaId} da unidade ${unidadeId}`);
+    
+    // Validações
+    if (!unidadeId || !caixaId) {
+      return res.status(400).json({
+        error: 'IDs de unidade e caixa são obrigatórios'
+      });
+    }
+    
+    const troco = await buscarTroco(unidadeId, caixaId);
+    
+    res.json(troco || {});
+  } catch (error) {
+    console.error('Erro ao buscar troco:', error);
+    res.status(500).json({
+      error: 'Erro interno ao buscar troco',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }

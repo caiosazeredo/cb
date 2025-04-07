@@ -1,3 +1,4 @@
+// src/pages/User/Movimentacao/index.jsx
 import { useState, useEffect, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -16,22 +17,17 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import ptBR from "date-fns/locale/pt-BR";
 
-import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
-import TableChartIcon from "@mui/icons-material/TableChart";
-
+import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 import Swal from "sweetalert2";
 
 import Api from "../../../helpers/Api";
 import AuthContext from "../../../helpers/AuthContext";
 
-// Seus componentes
+// Componentes
 import FormularioMovimentacao from "../../../components/FormularioMovimentacao";
 import HistoricoMovimentacao from "../../../components/HistoricoMovimentacao";
 import ResumoMovimentacao from "../../../components/ResumoMovimentacao";
 import FormularioMovimentacaoEmLinhas from "../../../components/FormularioMovimentacaoEmLinhas";
-
-import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
-
 
 const Movimentacao = () => {
   // Context e navegação
@@ -51,6 +47,7 @@ const Movimentacao = () => {
   const [error, setError] = useState(null);
   const [caixaInfo, setCaixaInfo] = useState(null);
   const [unidadeInfo, setUnidadeInfo] = useState(null);
+  const [trocoDisponivel, setTrocoDisponivel] = useState({});
 
   // Estado para novo movimento
   const [newMovement, setNewMovement] = useState({
@@ -84,7 +81,7 @@ const Movimentacao = () => {
   ];
 
   // -----------------------------
-  // BUSCAR DADOS (Caixa, Unidade)
+  // BUSCAR DADOS (Caixa, Unidade, Troco)
   // -----------------------------
   const fetchCaixaInfo = async () => {
     try {
@@ -109,6 +106,19 @@ const Movimentacao = () => {
       }
     } catch (error) {
       console.error("Erro ao buscar informações da unidade:", error);
+    }
+  };
+
+  const fetchTrocoDisponivel = async () => {
+    try {
+      const response = await api.getTroco(unidadeId, caixaId);
+      if (response.success) {
+        setTrocoDisponivel(response.data || {});
+      } else {
+        console.error("Erro ao buscar troco disponível:", response.error);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar troco disponível:", error);
     }
   };
 
@@ -170,9 +180,9 @@ const Movimentacao = () => {
   // AÇÕES: ADD, SAVE LOTE, DELETE
   // -----------------------------
   // Adicionar nova movimentação (form único)
-  const handleAddMovement = async () => {
-    // Validação de campos obrigatórios
-    if (!newMovement.paymentMethod || !newMovement.amount) {
+  const handleAddMovement = async (movementToAdd) => {
+    // Verificar se tem todas as informações
+    if (!movementToAdd.paymentMethod || !movementToAdd.amount) {
       Swal.fire({
         icon: "warning",
         title: "Campos obrigatórios",
@@ -182,31 +192,49 @@ const Movimentacao = () => {
       return;
     }
 
-    if (newMovement.type === "entrada" && !newMovement.paymentStatus) {
-      Swal.fire({
-        icon: "warning",
-        title: "Campo obrigatório",
-        text: "Status do pagamento é obrigatório",
-        showConfirmButton: true
-      });
-      return;
-    }
-
     try {
       setLoadingAction(true);
 
+      // Convertemos o objeto do formulário para o formato esperado pela API
       const movementData = {
-        tipo: newMovement.type,
-        forma: newMovement.paymentMethod,
-        valor: parseFloat(newMovement.amount.replace(",", ".")),
-        descricao: newMovement.description || "",
-        nomeCliente: newMovement.clientName || "",
-        numeroDocumento: newMovement.documentNumber || "",
+        tipo: movementToAdd.type,
+        forma: movementToAdd.paymentMethod,
+        valor: parseFloat(movementToAdd.amount.replace(",", ".")),
+        descricao: movementToAdd.description || "",
+        nomeCliente: movementToAdd.clientName || "",
+        numeroDocumento: movementToAdd.documentNumber || "",
         data: selectedDate.toISOString(),
         paymentStatus:
-          newMovement.type === "entrada" ? newMovement.paymentStatus : "realizado"
+          movementToAdd.type === "entrada" ? movementToAdd.paymentStatus : "realizado"
       };
 
+      // Se for pagamento em dinheiro, incluir dados do troco
+      if (movementToAdd.paymentMethod === 'dinheiro' && movementToAdd.trocoInfo) {
+        // Adicionar ao payload
+        movementData.valorRecebido = movementToAdd.trocoInfo.valorRecebido;
+        movementData.troco = movementToAdd.trocoInfo.troco;
+        
+        // Atualizar o troco no banco de dados
+        try {
+          const dadosTroco = {
+            denominacoesRecebidas: movementToAdd.trocoInfo.denominacoesRecebidas || {},
+            denominacoesTroco: {} // Aqui poderia calcular as denominações de troco
+          };
+          
+          // Chama a API para atualizar o troco
+          const trocoResponse = await api.updateTroco(unidadeId, caixaId, dadosTroco);
+          if (!trocoResponse.success) {
+            console.error("Erro ao atualizar troco:", trocoResponse.error);
+          } else {
+            // Atualiza o estado local com o novo troco
+            fetchTrocoDisponivel();
+          }
+        } catch (trocoError) {
+          console.error("Erro ao processar troco:", trocoError);
+        }
+      }
+
+      // Criar o movimento
       const response = await api.createMovement(unidadeId, caixaId, movementData);
 
       if (response.success) {
@@ -278,25 +306,34 @@ const Movimentacao = () => {
 
       const response = await api.createMovementsBatch(unidadeId, caixaId, listaDeMovimentos);
 
-      Swal.fire({
-        icon: "success",
-        title: "Todas as movimentações foram salvas!",
-        showConfirmButton: false,
-        timer: 1500
-      });
+      if (response.success) {
+        Swal.fire({
+          icon: "success",
+          title: "Todas as movimentações foram salvas!",
+          showConfirmButton: false,
+          timer: 1500
+        });
 
-      fetchMovements(selectedDate);
+        fetchMovements(selectedDate);
 
-      // Zera o form em lote
-      setTempMovements([
-        {
-          tipo: "entrada",
-          forma: "",
-          valor: "",
-          descricao: "",
-          paymentStatus: "realizado"
-        }
-      ]);
+        // Zera o form em lote
+        setTempMovements([
+          {
+            tipo: "entrada",
+            forma: "",
+            valor: "",
+            descricao: "",
+            paymentStatus: "realizado"
+          }
+        ]);
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Erro ao salvar movimentações em lote",
+          text: response.error || "Verifique os dados e tente novamente",
+          showConfirmButton: true
+        });
+      }
     } catch (error) {
       Swal.fire({
         icon: "error",
@@ -309,7 +346,7 @@ const Movimentacao = () => {
     }
   };
 
-  // Deletar uma movimentação (função vazia)
+  // Deletar uma movimentação
   const handleDeleteMovement = async (id) => {
     try {
       const result = await Swal.fire({
@@ -382,7 +419,6 @@ const Movimentacao = () => {
     fetchMovements(newDate);
   };
 
-
   // -----------------------------
   // FUNÇÃO RETORNAR
   // -----------------------------
@@ -415,6 +451,7 @@ const Movimentacao = () => {
     fetchCaixaInfo();
     fetchUnidadeInfo();
     fetchMovements(selectedDate);
+    fetchTrocoDisponivel();
   }, [unidadeId, caixaId, auth.user]);
 
   // Renderização com tratamento de loading/error
@@ -461,27 +498,6 @@ const Movimentacao = () => {
                   maxDate={new Date()}
                 />
               </LocalizationProvider>
-
-              {/* Comentei os botões de icone pq não sei se vamos usar ou não */}
-              {/* <IconButton
-                sx={{
-                  bgcolor: "primary.main",
-                  color: "white",
-                  "&:hover": { bgcolor: "primary.dark" }
-                }}
-              >
-                <PhotoCameraIcon />
-              </IconButton>
-
-              <IconButton
-                sx={{
-                  bgcolor: "success.main",
-                  color: "white",
-                  "&:hover": { bgcolor: "success.dark" }
-                }}
-              >
-                <TableChartIcon />
-              </IconButton> */}
             </Box>
           </Box>
 
@@ -540,6 +556,9 @@ const Movimentacao = () => {
                     paymentMethods={paymentMethods}
                     onAddMovement={handleAddMovement}
                     loading={loadingAction}
+                    unidadeId={unidadeId}
+                    caixaId={caixaId}
+                    api={api}
                   />
                 </Box>
                 <Box sx={{ width: { xs: "100%", md: "250px" } }}>

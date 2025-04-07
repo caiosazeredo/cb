@@ -1,6 +1,14 @@
 // src/routes/api/caixas.js (atualizado)
 import express from 'express';
-import { criarCaixa, listarCaixas, deletarCaixa, atualizarCaixa, buscarCaixa } from '../../controllers/caixaController.js';
+import { 
+  criarCaixa, 
+  listarCaixas, 
+  deletarCaixa, 
+  atualizarCaixa, 
+  buscarCaixa,
+  buscarTrocoCaixa,
+  atualizarTrocoCaixa
+} from '../../controllers/caixaController.js';
 import { authenticateToken } from "../../middlewares/authenticate-jwt.js";
 
 const router = express.Router({ mergeParams: true });
@@ -175,5 +183,84 @@ router.delete('/:caixaId', authenticateToken, deletarCaixa);
  *         description: Erro interno
  */
 router.put('/:caixaId', authenticateToken, atualizarCaixa);
+
+/**
+ * @swagger
+ * /api/unidades/{unidadeId}/caixas/{caixaId}/troco:
+ *   get:
+ *     summary: Buscar o troco disponível em um caixa
+ *     tags: [Caixas]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: unidadeId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID da unidade
+ *       - in: path
+ *         name: caixaId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID do caixa
+ *     responses:
+ *       200:
+ *         description: Troco disponível no caixa
+ *       401:
+ *         description: Não autorizado
+ *       404:
+ *         description: Caixa não encontrado
+ *       500:
+ *         description: Erro interno
+ */
+router.get('/:caixaId/troco', authenticateToken, buscarTrocoCaixa);
+
+/**
+ * @swagger
+ * /api/unidades/{unidadeId}/caixas/{caixaId}/troco:
+ *   put:
+ *     summary: Atualizar o troco disponível em um caixa
+ *     tags: [Caixas]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: unidadeId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID da unidade
+ *       - in: path
+ *         name: caixaId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID do caixa
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               denominacoesRecebidas:
+ *                 type: object
+ *                 description: Denominações recebidas no pagamento
+ *               denominacoesTroco:
+ *                 type: object
+ *                 description: Denominações fornecidas como troco
+ *     responses:
+ *       200:
+ *         description: Troco atualizado com sucesso
+ *       401:
+ *         description: Não autorizado
+ *       404:
+ *         description: Caixa não encontrado
+ *       500:
+ *         description: Erro interno
+ */
+router.put('/:caixaId/troco', authenticateToken, atualizarTrocoCaixa);
 
 export default router;
