@@ -267,20 +267,16 @@ const Movimentacao = () => {
     try {
       setLoadingAction(true);
 
-      for (const item of tempMovements) {
-        const movementData = {
-          tipo: item.tipo || "entrada",
-          forma: item.forma,
-          valor: parseFloat(item.valor.replace(",", ".")) || 0,
-          descricao: item.descricao || "",
-          data: selectedDate.toISOString(),
-          paymentStatus: item.tipo === "entrada" ? item.paymentStatus : "realizado"
-        };
-        const response = await api.createMovement(unidadeId, caixaId, movementData);
-        if (!response.success) {
-          throw new Error(response.error || "Erro ao criar movimentação");
-        }
-      }
+      // Converte cada item (tempMovements) no formato esperado pela API
+      const listaDeMovimentos = tempMovements.map(item => ({
+        tipo: item.tipo,
+        forma: item.forma,
+        valor: parseFloat(item.valor.replace(",", ".")),
+        descricao: item.descricao,
+        paymentStatus: item.paymentStatus
+      }));
+
+      const response = await api.createMovementsBatch(unidadeId, caixaId, listaDeMovimentos);
 
       Swal.fire({
         icon: "success",

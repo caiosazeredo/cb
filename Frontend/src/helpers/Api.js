@@ -311,6 +311,18 @@ const Api = () => {
       }
     },
 
+    createMovementsBatch: async (unidadeId, caixaId, listaDeMovimentos) => {
+      try {
+        const response = await api.post(
+          `/unidades/${unidadeId}/caixas/${caixaId}/movimentos/lote`,
+          { movimentos: listaDeMovimentos }
+        );
+        return formatResponse(response);
+      } catch (error) {
+        return formatError(error);
+      }
+    },
+
     // ==================== USUÁRIOS ====================
     createUser: async (dadosUsuario) => {
       try {

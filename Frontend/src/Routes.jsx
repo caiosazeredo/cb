@@ -30,15 +30,13 @@ export const AllRoutes = () => {
   const headerRoutes = [
     "/",
     "/unidade/:id",
-    "/unidades",
     "/unidade/:unidadeId/caixas",
     "/unidade/:unidadeId/caixa/:caixaId/movimentacao",
     "/userRegistration",
     "/employeesList",
     "/unitsList",
     "/createUnit",
-    "/employeesEditAndRemove/:id",
-    "/unitEditAndRemove/:id"
+    "/employeesEditAndRemove/:id"
   ];
 
   // Verifica se deve mostrar o header baseado no padrão da rota atual
@@ -124,35 +122,10 @@ export const AllRoutes = () => {
                 </RequireAuth>
               }
             />
-            {/* Rotas de usuário comum que o super usuário também pode acessar */}
-            <Route
-              path="/unidades"
-              element={
-                <RequireAuth>
-                  <Home />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/unidade/:unidadeId/caixas"
-              element={
-                <RequireAuth>
-                  <Caixas />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/unidade/:unidadeId/caixa/:caixaId/movimentacao"
-              element={
-                <RequireAuth>
-                  <Movimentacao />
-                </RequireAuth>
-              }
-            />
           </>
         }
 
-        {/* Rotas usuário comum */}
+        {/* Rotas usuário */}
         {user && !user.superusuario &&
           <>
             <Route
@@ -182,7 +155,7 @@ export const AllRoutes = () => {
           </>
         }
 
-        {/* Rotas gerais */}
+        {/* Rotas */}
         <Route path="/login" element={<Login />} />
         <Route path="*" element={<NotFound />} />
 
