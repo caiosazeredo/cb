@@ -22,7 +22,7 @@ const HomeS = () => {
     { icon: PeopleIcon, text: "Listar Funcionários", link: "/employeesList" },
     { icon: AddBusinessIcon, text: "Cadastrar Unidade", link: "/createUnit" },
     { icon: StorefrontIcon, text: "Listar Unidades", link: "/unitsList" },
-    { icon: AssessmentIcon, text: "Relatórios", link: "/" },
+    { icon: AssessmentIcon, text: "Relatórios", link: "/reports" },
     { icon: ContactPageIcon, text: "Página do Funcionário", link: "/userMenu" },
     /* { icon: HistoryIcon, text: "Histórico de Acesso", link: "/" },
     { icon: HistoryIcon, text: "Histórico de Atividades", link: "/" },
@@ -40,7 +40,7 @@ const HomeS = () => {
             icon={<option.icon />}
             text={option.text}
             onClick={() => {
-              if(option.text === "Dashboard" || option.text === "Relatórios"){
+              if(option.text === "Dashboard"){
                 alert("Página em construção")
                 return
               }

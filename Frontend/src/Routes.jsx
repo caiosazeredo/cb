@@ -6,16 +6,18 @@ import { RequireAuth } from "./helpers/RequireAuth";
 import AuthContext from "./helpers/AuthContext";
 
 //super usuario
-import HomeS from "./pages/SuperUser/Home/index.jsx";
+import HomeS from "./pages/SuperUser/Home";
 import UserRegistration from "./pages/SuperUser/UserRegistration";
 import EmployeesList from "./pages/SuperUser/EmployeesList";
 import EmployeesEditAndRemove from "./pages/SuperUser/EmployeesEditAndRemove";
 import UnitsList from "./pages/SuperUser/UnitsList";
 import CreateUnit from "./pages/SuperUser/CreateUnit";
 import UnitEditAndRemove from "./pages/SuperUser/UnitEditAndRemove";
+import Reports from "./pages/SuperUser/Reports";
+
 //usuario
 import Home from "./pages/User/Home";
-import Caixas from "./pages/User/Caixas/index.jsx";
+import Caixas from "./pages/User/Caixas";
 import Movimentacao from "./pages/User/Movimentacao";
 //geral
 import Login from "./pages/Login";
@@ -37,6 +39,8 @@ export const AllRoutes = () => {
     "/unitsList",
     "/createUnit",
     "/employeesEditAndRemove/:id",
+    "/unitEditAndRemove/:id",
+    "/reports",
     "/userMenu"
   ];
 
@@ -120,6 +124,14 @@ export const AllRoutes = () => {
               element={
                 <RequireAuth>
                   <UnitEditAndRemove />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <RequireAuth>
+                  <Reports />
                 </RequireAuth>
               }
             />
