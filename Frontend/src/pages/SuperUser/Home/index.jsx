@@ -11,6 +11,7 @@ import LockOpenIcon from "@mui/icons-material/LockOpen";
 import PeopleIcon from "@mui/icons-material/People";
 import HistoryIcon from "@mui/icons-material/History";
 import AssessmentIcon from "@mui/icons-material/Assessment";
+import ContactPageIcon from '@mui/icons-material/ContactPage';
 import { useNavigate } from "react-router-dom";
 
 const HomeS = () => {
@@ -22,6 +23,7 @@ const HomeS = () => {
     { icon: AddBusinessIcon, text: "Cadastrar Unidade", link: "/createUnit" },
     { icon: StorefrontIcon, text: "Listar Unidades", link: "/unitsList" },
     { icon: AssessmentIcon, text: "Relatórios", link: "/" },
+    { icon: ContactPageIcon, text: "Página do Funcionário", link: "/userMenu" },
     /* { icon: HistoryIcon, text: "Histórico de Acesso", link: "/" },
     { icon: HistoryIcon, text: "Histórico de Atividades", link: "/" },
     { icon: LockOpenIcon, text: "Editar/Excluir Acesso a Unidade", link: "/" },

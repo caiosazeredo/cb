@@ -130,7 +130,11 @@ const Caixas = () => {
 
   // Voltar para a Home "/"
   const handleGoHome = () => {
-    navigate("/");
+    if(auth.user && auth.user.superusuario){
+      navigate("/userMenu");
+    }else{
+      navigate("/");
+    }
   };
 
   // Efeito para buscar dados ao montar o componente

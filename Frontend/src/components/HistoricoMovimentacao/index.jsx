@@ -41,6 +41,8 @@ const HistoricoMovimentacao = ({ movements, paymentMethods, onDeleteMovement, lo
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  const hasDinheiro = movements.some(movement => movement.forma === 'dinheiro');
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
@@ -68,6 +70,12 @@ const HistoricoMovimentacao = ({ movements, paymentMethods, onDeleteMovement, lo
             <TableCell>Tipo</TableCell>
             <TableCell>Status</TableCell>
             <TableCell>Forma</TableCell>
+            {hasDinheiro && (
+              <>
+                <TableCell align="right">Entrada de moedas</TableCell>
+                <TableCell align="right">Saída de moedas</TableCell>
+              </>
+            )}
             <TableCell align="right">Valor</TableCell>
             <TableCell>Descrição</TableCell>
             <TableCell>Ações</TableCell>
@@ -106,6 +114,20 @@ const HistoricoMovimentacao = ({ movements, paymentMethods, onDeleteMovement, lo
                 )}
               </TableCell>
               <TableCell>{getPaymentMethodLabel(movement.forma)}</TableCell>
+              {hasDinheiro && (
+                <>
+                  <TableCell align="right">
+                    {movement.forma === 'dinheiro'
+                      ? movement.moedasEntrada || 0
+                      : 0}
+                  </TableCell>
+                  <TableCell align="right">
+                    {movement.forma === 'dinheiro'
+                      ? movement.moedasSaida || 0
+                      : 0}
+                  </TableCell>
+                </>
+              )}
               <TableCell align="right">
                 <Typography
                   sx={{

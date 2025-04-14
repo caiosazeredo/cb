@@ -36,7 +36,8 @@ export const AllRoutes = () => {
     "/employeesList",
     "/unitsList",
     "/createUnit",
-    "/employeesEditAndRemove/:id"
+    "/employeesEditAndRemove/:id",
+    "/userMenu"
   ];
 
   // Verifica se deve mostrar o header baseado no padrão da rota atual
@@ -122,6 +123,14 @@ export const AllRoutes = () => {
                 </RequireAuth>
               }
             />
+            <Route
+              path="/userMenu"
+              element={
+                <RequireAuth>
+                  <Home />
+                </RequireAuth>
+              }
+            />
           </>
         }
 
@@ -136,25 +145,25 @@ export const AllRoutes = () => {
                 </RequireAuth>
               }
             />
-            <Route
-              path="/unidade/:unidadeId/caixas"
-              element={
-                <RequireAuth>
-                  <Caixas />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/unidade/:unidadeId/caixa/:caixaId/movimentacao"
-              element={
-                <RequireAuth>
-                  <Movimentacao />
-                </RequireAuth>
-              }
-            />
           </>
         }
 
+        <Route
+          path="/unidade/:unidadeId/caixas"
+          element={
+            <RequireAuth>
+              <Caixas />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/unidade/:unidadeId/caixa/:caixaId/movimentacao"
+          element={
+            <RequireAuth>
+              <Movimentacao />
+            </RequireAuth>
+          }
+        />
         {/* Rotas */}
         <Route path="/login" element={<Login />} />
         <Route path="*" element={<NotFound />} />

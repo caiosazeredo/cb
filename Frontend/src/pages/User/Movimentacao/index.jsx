@@ -1,4 +1,3 @@
-// src/pages/User/Movimentacao/index.jsx
 import { useState, useEffect, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -18,12 +17,15 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import ptBR from "date-fns/locale/pt-BR";
 
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
+import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
+import TableChartIcon from "@mui/icons-material/TableChart";
+
 import Swal from "sweetalert2";
 
 import Api from "../../../helpers/Api";
 import AuthContext from "../../../helpers/AuthContext";
 
-// Componentes
+// Seus componentes
 import FormularioMovimentacao from "../../../components/FormularioMovimentacao";
 import HistoricoMovimentacao from "../../../components/HistoricoMovimentacao";
 import ResumoMovimentacao from "../../../components/ResumoMovimentacao";
@@ -47,7 +49,6 @@ const Movimentacao = () => {
   const [error, setError] = useState(null);
   const [caixaInfo, setCaixaInfo] = useState(null);
   const [unidadeInfo, setUnidadeInfo] = useState(null);
-  const [trocoDisponivel, setTrocoDisponivel] = useState({});
 
   // Estado para novo movimento
   const [newMovement, setNewMovement] = useState({
@@ -57,7 +58,9 @@ const Movimentacao = () => {
     description: "",
     clientName: "",
     documentNumber: "",
-    paymentStatus: "realizado"
+    paymentStatus: "realizado",
+    moedasEntrada: "",
+    moedasSaida: ""
   });
 
   // Estado para várias movimentações (lote)
@@ -67,7 +70,9 @@ const Movimentacao = () => {
       forma: "",
       valor: "",
       descricao: "",
-      paymentStatus: "realizado"
+      paymentStatus: "realizado",
+      moedasEntrada: "",
+      moedasSaida: ""
     }
   ]);
 
@@ -81,7 +86,7 @@ const Movimentacao = () => {
   ];
 
   // -----------------------------
-  // BUSCAR DADOS (Caixa, Unidade, Troco)
+  // BUSCAR DADOS (Caixa, Unidade)
   // -----------------------------
   const fetchCaixaInfo = async () => {
     try {
@@ -106,19 +111,6 @@ const Movimentacao = () => {
       }
     } catch (error) {
       console.error("Erro ao buscar informações da unidade:", error);
-    }
-  };
-
-  const fetchTrocoDisponivel = async () => {
-    try {
-      const response = await api.getTroco(unidadeId, caixaId);
-      if (response.success) {
-        setTrocoDisponivel(response.data || {});
-      } else {
-        console.error("Erro ao buscar troco disponível:", response.error);
-      }
-    } catch (error) {
-      console.error("Erro ao buscar troco disponível:", error);
     }
   };
 
@@ -177,12 +169,24 @@ const Movimentacao = () => {
   };
 
   // -----------------------------
+  // Converter arquivo em Base64
+  // -----------------------------
+  async function convertToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
+  }
+
+  // -----------------------------
   // AÇÕES: ADD, SAVE LOTE, DELETE
   // -----------------------------
   // Adicionar nova movimentação (form único)
-  const handleAddMovement = async (movementToAdd) => {
-    // Verificar se tem todas as informações
-    if (!movementToAdd.paymentMethod || !movementToAdd.amount) {
+  const handleAddMovement = async (imageFile) => {
+    // Validação de campos obrigatórios
+    if (!newMovement.paymentMethod || !newMovement.amount) {
       Swal.fire({
         icon: "warning",
         title: "Campos obrigatórios",
@@ -192,49 +196,45 @@ const Movimentacao = () => {
       return;
     }
 
+    if (newMovement.type === "entrada" && !newMovement.paymentStatus) {
+      Swal.fire({
+        icon: "warning",
+        title: "Campo obrigatório",
+        text: "Status do pagamento é obrigatório",
+        showConfirmButton: true
+      });
+      return;
+    }
+
     try {
       setLoadingAction(true);
 
-      // Convertemos o objeto do formulário para o formato esperado pela API
+      // Montamos o objeto que será salvo
       const movementData = {
-        tipo: movementToAdd.type,
-        forma: movementToAdd.paymentMethod,
-        valor: parseFloat(movementToAdd.amount.replace(",", ".")),
-        descricao: movementToAdd.description || "",
-        nomeCliente: movementToAdd.clientName || "",
-        numeroDocumento: movementToAdd.documentNumber || "",
+        tipo: newMovement.type,
+        forma: newMovement.paymentMethod,
+        valor: parseFloat(newMovement.amount.replace(",", ".")),
+        descricao: newMovement.description || "",
+        nomeCliente: newMovement.clientName || "",
+        numeroDocumento: newMovement.documentNumber || "",
         data: selectedDate.toISOString(),
         paymentStatus:
-          movementToAdd.type === "entrada" ? movementToAdd.paymentStatus : "realizado"
+          newMovement.type === "entrada" ? newMovement.paymentStatus : "realizado",
+        moedasEntrada:
+          newMovement.paymentMethod === "dinheiro"
+            ? newMovement.moedasEntrada
+            : "",
+        moedasSaida:
+          newMovement.paymentMethod === "dinheiro"
+            ? newMovement.moedasSaida
+            : ""
       };
 
-      // Se for pagamento em dinheiro, incluir dados do troco
-      if (movementToAdd.paymentMethod === 'dinheiro' && movementToAdd.trocoInfo) {
-        // Adicionar ao payload
-        movementData.valorRecebido = movementToAdd.trocoInfo.valorRecebido;
-        movementData.troco = movementToAdd.trocoInfo.troco;
-        
-        // Atualizar o troco no banco de dados
-        try {
-          const dadosTroco = {
-            denominacoesRecebidas: movementToAdd.trocoInfo.denominacoesRecebidas || {},
-            denominacoesTroco: {} // Aqui poderia calcular as denominações de troco
-          };
-          
-          // Chama a API para atualizar o troco
-          const trocoResponse = await api.updateTroco(unidadeId, caixaId, dadosTroco);
-          if (!trocoResponse.success) {
-            console.error("Erro ao atualizar troco:", trocoResponse.error);
-          } else {
-            // Atualiza o estado local com o novo troco
-            fetchTrocoDisponivel();
-          }
-        } catch (trocoError) {
-          console.error("Erro ao processar troco:", trocoError);
-        }
+      if (imageFile) {
+        const base64Image = await convertToBase64(imageFile);
+        movementData.comprovante = base64Image; 
       }
 
-      // Criar o movimento
       const response = await api.createMovement(unidadeId, caixaId, movementData);
 
       if (response.success) {
@@ -255,7 +255,9 @@ const Movimentacao = () => {
           description: "",
           clientName: "",
           documentNumber: "",
-          paymentStatus: "realizado"
+          paymentStatus: "realizado",
+          moedasEntrada: "",
+          moedasSaida: ""
         });
       } else {
         if (response.status === 401) {
@@ -296,44 +298,39 @@ const Movimentacao = () => {
       setLoadingAction(true);
 
       // Converte cada item (tempMovements) no formato esperado pela API
-      const listaDeMovimentos = tempMovements.map(item => ({
+      const listaDeMovimentos = tempMovements.map((item) => ({
         tipo: item.tipo,
         forma: item.forma,
         valor: parseFloat(item.valor.replace(",", ".")),
         descricao: item.descricao,
-        paymentStatus: item.paymentStatus
+        paymentStatus: item.paymentStatus,
+        moedasEntrada: item.forma === "dinheiro" ? Number(item.moedasEntrada || 0) : 0,
+        moedasSaida: item.forma === "dinheiro" ? Number(item.moedasSaida || 0) : 0
       }));
 
       const response = await api.createMovementsBatch(unidadeId, caixaId, listaDeMovimentos);
 
-      if (response.success) {
-        Swal.fire({
-          icon: "success",
-          title: "Todas as movimentações foram salvas!",
-          showConfirmButton: false,
-          timer: 1500
-        });
+      Swal.fire({
+        icon: "success",
+        title: "Todas as movimentações foram salvas!",
+        showConfirmButton: false,
+        timer: 1500
+      });
 
-        fetchMovements(selectedDate);
+      fetchMovements(selectedDate);
 
-        // Zera o form em lote
-        setTempMovements([
-          {
-            tipo: "entrada",
-            forma: "",
-            valor: "",
-            descricao: "",
-            paymentStatus: "realizado"
-          }
-        ]);
-      } else {
-        Swal.fire({
-          icon: "error",
-          title: "Erro ao salvar movimentações em lote",
-          text: response.error || "Verifique os dados e tente novamente",
-          showConfirmButton: true
-        });
-      }
+      // Zera o form em lote
+      setTempMovements([
+        {
+          tipo: "entrada",
+          forma: "",
+          valor: "",
+          descricao: "",
+          paymentStatus: "realizado",
+          moedasEntrada: "",
+          moedasSaida: ""
+        }
+      ]);
     } catch (error) {
       Swal.fire({
         icon: "error",
@@ -350,14 +347,14 @@ const Movimentacao = () => {
   const handleDeleteMovement = async (id) => {
     try {
       const result = await Swal.fire({
-        title: 'Confirmar exclusão',
+        title: "Confirmar exclusão",
         text: "Esta ação não pode ser desfeita!",
-        icon: 'warning',
+        icon: "warning",
         showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Sim, excluir!',
-        cancelButtonText: 'Cancelar'
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#3085d6",
+        confirmButtonText: "Sim, excluir!",
+        cancelButtonText: "Cancelar"
       });
 
       if (result.isConfirmed) {
@@ -366,8 +363,8 @@ const Movimentacao = () => {
 
         if (response.success) {
           Swal.fire({
-            icon: 'success',
-            title: 'Movimentação excluída com sucesso!',
+            icon: "success",
+            title: "Movimentação excluída com sucesso!",
             showConfirmButton: false,
             timer: 1500
           });
@@ -375,34 +372,34 @@ const Movimentacao = () => {
         } else {
           if (response.status === 401) {
             Swal.fire({
-              icon: 'warning',
-              title: 'Sessão Expirada',
-              text: 'Por favor, faça login novamente.',
-              showConfirmButton: true,
+              icon: "warning",
+              title: "Sessão Expirada",
+              text: "Por favor, faça login novamente.",
+              showConfirmButton: true
             }).then(() => {
               auth.signout();
-              navigate('/login');
+              navigate("/login");
             });
           } else {
             Swal.fire({
-              icon: 'error',
-              title: 'Erro',
-              text: response.error || 'Erro ao excluir movimentação',
-              showConfirmButton: true,
+              icon: "error",
+              title: "Erro",
+              text: response.error || "Erro ao excluir movimentação",
+              showConfirmButton: true
             });
           }
         }
         setLoadingAction(false);
       }
     } catch (error) {
-      console.error('Erro ao excluir movimentação:', error);
+      console.error("Erro ao excluir movimentação:", error);
       setLoadingAction(false);
 
       Swal.fire({
-        icon: 'error',
-        title: 'Erro ao excluir movimentação',
-        text: 'Tente novamente mais tarde',
-        showConfirmButton: true,
+        icon: "error",
+        title: "Erro ao excluir movimentação",
+        text: "Tente novamente mais tarde",
+        showConfirmButton: true
       });
     }
   };
@@ -451,7 +448,7 @@ const Movimentacao = () => {
     fetchCaixaInfo();
     fetchUnidadeInfo();
     fetchMovements(selectedDate);
-    fetchTrocoDisponivel();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unidadeId, caixaId, auth.user]);
 
   // Renderização com tratamento de loading/error
@@ -498,6 +495,29 @@ const Movimentacao = () => {
                   maxDate={new Date()}
                 />
               </LocalizationProvider>
+
+              {/* Botões de ícone (opcionais) */}
+              {/* 
+              <IconButton
+                sx={{
+                  bgcolor: "primary.main",
+                  color: "white",
+                  "&:hover": { bgcolor: "primary.dark" }
+                }}
+              >
+                <PhotoCameraIcon />
+              </IconButton>
+
+              <IconButton
+                sx={{
+                  bgcolor: "success.main",
+                  color: "white",
+                  "&:hover": { bgcolor: "success.dark" }
+                }}
+              >
+                <TableChartIcon />
+              </IconButton> 
+              */}
             </Box>
           </Box>
 
@@ -554,11 +574,9 @@ const Movimentacao = () => {
                     newMovement={newMovement}
                     setNewMovement={setNewMovement}
                     paymentMethods={paymentMethods}
+                    // Passamos handleAddMovement, que recebe também o arquivo de imagem
                     onAddMovement={handleAddMovement}
                     loading={loadingAction}
-                    unidadeId={unidadeId}
-                    caixaId={caixaId}
-                    api={api}
                   />
                 </Box>
                 <Box sx={{ width: { xs: "100%", md: "250px" } }}>
@@ -597,7 +615,15 @@ const Movimentacao = () => {
                         tipo: item.tipo,
                         forma: item.forma,
                         valor: parseFloat((item.valor || "").replace(",", ".")) || 0,
-                        paymentStatus: item.paymentStatus || "realizado"
+                        paymentStatus: item.paymentStatus || "realizado",
+                        moedasEntrada:
+                          item.forma === "dinheiro"
+                            ? parseFloat(item.moedasEntrada || 0)
+                            : 0,
+                        moedasSaida:
+                          item.forma === "dinheiro"
+                            ? parseFloat(item.moedasSaida || 0)
+                            : 0
                       }))
                     ];
                     return (

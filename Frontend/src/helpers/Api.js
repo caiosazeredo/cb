@@ -378,24 +378,7 @@ const Api = () => {
         return formatError(error);
       }
     },
-    // ==================== TROCO ====================
-    getTroco: async (unidadeId, caixaId) => {
-      try {
-        const response = await api.get(`/unidades/${unidadeId}/caixas/${caixaId}/troco`);
-        return formatResponse(response);
-      } catch (error) {
-        return formatError(error);
-      }
-    },
 
-    updateTroco: async (unidadeId, caixaId, dadosTroco) => {
-      try {
-        const response = await api.put(`/unidades/${unidadeId}/caixas/${caixaId}/troco`, dadosTroco);
-        return formatResponse(response);
-      } catch (error) {
-        return formatError(error);
-      }
-    },
     getLogs: async () => {
       try {
         const response = await api.get('/logs');

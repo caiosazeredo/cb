@@ -1,5 +1,14 @@
 import React, { useRef } from 'react';
-import { Box, TextField, Button, Table, TableHead, TableRow, TableCell, TableBody } from '@mui/material';
+import { 
+  Box, 
+  TextField, 
+  Button, 
+  Table, 
+  TableHead, 
+  TableRow, 
+  TableCell, 
+  TableBody 
+} from '@mui/material';
 import Swal from 'sweetalert2';
 
 const FormularioMovimentacaoEmLinhas = ({
@@ -12,6 +21,9 @@ const FormularioMovimentacaoEmLinhas = ({
   const descRefs = useRef([]);
   const valorRefs = useRef([]);
 
+  // Verifica se existe ao menos uma linha em dinheiro
+  const hasDinheiro = tempMovements.some((mov) => mov.forma === 'dinheiro');
+
   // Retorna um array com os nomes dos campos que estão faltando nessa linha
   const getMissingFields = (mov) => {
     const missing = [];
@@ -19,19 +31,13 @@ const FormularioMovimentacaoEmLinhas = ({
     if (!mov.forma) missing.push('Forma de Pagamento');
     if (!mov.valor) missing.push('Valor');
     if (!mov.descricao) missing.push('Descrição');
+    
+    // Se for 'dinheiro', exige moedasEntrada e moedasSaida? A critério de validação
+    if (mov.forma === 'dinheiro') {
+      if (!mov.moedasEntrada) missing.push('Entrada de Moedas');
+      if (!mov.moedasSaida) missing.push('Saída de Moedas');
+    }
     return missing;
-  };
-
-  // Verifica se a linha está preenchida corretamente
-  const isLineValid = (mov) => {
-    return getMissingFields(mov).length === 0;
-  };
-
-  // Atualiza o valor de um campo em uma linha específica
-  const handleChange = (index, field, value) => {
-    const updated = [...tempMovements];
-    updated[index][field] = value;
-    onTempMovementsChange(updated);
   };
 
   // Adiciona uma nova linha
@@ -43,7 +49,9 @@ const FormularioMovimentacaoEmLinhas = ({
         forma: '',
         valor: '',
         descricao: '',
-        paymentStatus: 'realizado'
+        paymentStatus: 'realizado',
+        moedasEntrada: '',
+        moedasSaida: ''
       }
     ];
     onTempMovementsChange(updated);
@@ -53,6 +61,13 @@ const FormularioMovimentacaoEmLinhas = ({
   const removeLine = (index) => {
     if (tempMovements.length === 1) return; // não remove se for a única
     const updated = tempMovements.filter((_, idx) => idx !== index);
+    onTempMovementsChange(updated);
+  };
+
+  // Atualiza o valor de um campo em uma linha específica
+  const handleChange = (index, field, value) => {
+    const updated = [...tempMovements];
+    updated[index][field] = value;
     onTempMovementsChange(updated);
   };
 
@@ -79,6 +94,15 @@ const FormularioMovimentacaoEmLinhas = ({
           <TableRow>
             <TableCell>Tipo</TableCell>
             <TableCell>Forma Pagamento</TableCell>
+
+            {/* Se tiver ao menos uma linha de dinheiro, exibe as colunas */}
+            {hasDinheiro && (
+              <>
+                <TableCell>Entrada de moedas</TableCell>
+                <TableCell>Saída de moedas</TableCell>
+              </>
+            )}
+
             <TableCell>Valor</TableCell>
             <TableCell>Descrição</TableCell>
             <TableCell>Ações</TableCell>
@@ -121,6 +145,48 @@ const FormularioMovimentacaoEmLinhas = ({
                 </TextField>
               </TableCell>
 
+              {/* Só renderiza as células de moedas se hasDinheiro for true */}
+              {hasDinheiro && (
+                <>
+                  <TableCell>
+                    {mov.forma === 'dinheiro' ? (
+                      <TextField
+                        type="number"
+                        value={mov.moedasEntrada || ''}
+                        onChange={(e) => handleChange(index, 'moedasEntrada', e.target.value)}
+                        placeholder="Entrada de moedas"
+                        size="small"
+                      />
+                    ) : (
+                      // Se não for dinheiro, deixamos o campo desabilitado ou vazio
+                      <TextField
+                        disabled
+                        placeholder="-"
+                        size="small"
+                      />
+                    )}
+                  </TableCell>
+
+                  <TableCell>
+                    {mov.forma === 'dinheiro' ? (
+                      <TextField
+                        type="number"
+                        value={mov.moedasSaida || ''}
+                        onChange={(e) => handleChange(index, 'moedasSaida', e.target.value)}
+                        placeholder="Saída de moedas"
+                        size="small"
+                      />
+                    ) : (
+                      <TextField
+                        disabled
+                        placeholder="-"
+                        size="small"
+                      />
+                    )}
+                  </TableCell>
+                </>
+              )}
+
               {/* Valor */}
               <TableCell>
                 <TextField
@@ -161,7 +227,7 @@ const FormularioMovimentacaoEmLinhas = ({
                         Swal.fire({
                           icon: 'warning',
                           title: 'Atenção',
-                          text: `Preencha os campos obrigatórios antes de adicionar nova linha.\nFaltando: ${missing.join(', ')}`
+                          text: `Preencha os campos obrigatórios antes de adicionar nova linha.\nFaltando: ${missing.join(', ')}` 
                         });
                         return;
                       }
@@ -200,16 +266,16 @@ const FormularioMovimentacaoEmLinhas = ({
       </Table>
 
       <Box mt={2} display="flex" gap={2}>
-        <Button 
-          variant="contained" 
-          color="secondary" 
+        <Button
+          variant="contained"
+          color="secondary"
           onClick={addNewLine}
         >
           Adicionar Linha
         </Button>
 
-        <Button 
-          variant="contained" 
+        <Button
+          variant="contained"
           color="primary"
           onClick={handleSaveAll}
         >
