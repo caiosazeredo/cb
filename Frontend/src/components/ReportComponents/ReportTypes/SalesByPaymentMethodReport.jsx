@@ -1,5 +1,4 @@
 // src/components/ReportComponents/ReportTypes/SalesByPaymentMethodReport.jsx
-// Componente para o relatório de vendas por método de pagamento
 import React from "react";
 import {
   Box,
@@ -188,4 +187,4 @@ export const SalesByPaymentMethodReport = ({ data, viewType }) => {
       </Box>
     );
   }
-};
+  }

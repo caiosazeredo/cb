@@ -1,191 +1,451 @@
-// src/components/ReportComponents/FinancialSummaryCard.jsx
+// src/components/ReportComponents/ReportTypes/FinancialSummaryReport.jsx
 import React from "react";
 import {
+  Box,
+  Grid,
   Card,
   CardContent,
   Typography,
-  Box,
-  Divider,
-  LinearProgress,
-  Grid
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Divider
 } from "@mui/material";
+import {
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  Legend,
+  ResponsiveContainer
+} from "recharts";
+import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
+import MoneyOffIcon from "@mui/icons-material/MoneyOff";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import TrendingDownIcon from "@mui/icons-material/TrendingDown";
+import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
 
-// Componente de cartão para resumo financeiro
-export const FinancialSummaryCard = ({ title, value, previousValue, icon, color = "primary" }) => {
-  // Calcula a variação percentual
-  const calculatePercentageChange = () => {
-    if (!previousValue || previousValue === 0) return null;
-    return ((value - previousValue) / previousValue) * 100;
+export const FinancialSummaryReport = ({ data, viewType }) => {
+  if (!data || !data.totals) {
+    return (
+      <Box sx={{ p: 3, textAlign: "center" }}>
+        <Typography variant="h6" color="text.secondary">
+          Dados insuficientes para gerar o relatório
+        </Typography>
+      </Box>
+    );
+  }
+
+  const { totals } = data;
+  
+  // Formatar valores monetários
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
   };
 
-  const percentChange = calculatePercentageChange();
-  const isPositive = percentChange > 0;
+  // Dados para gráfico de barras
+  const barChartData = [
+    { name: "Receitas", valor: totals.receitas },
+    { name: "Despesas", valor: Math.abs(totals.despesas) },
+    { name: "Lucro", valor: totals.lucro > 0 ? totals.lucro : 0 },
+    { name: "Valores Pendentes", valor: totals.valoresPendentes }
+  ];
 
-  return (
-    <Card sx={{ height: "100%" }}>
-      <CardContent>
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary">
-              {title}
-            </Typography>
-            <Typography variant="h5" sx={{ mt: 1, color: `${color}.main` }}>
-              R$ {value.toFixed(2)}
-            </Typography>
-          </Box>
-          <Box
-            sx={{
-              bgcolor: `${color}.lighter`,
-              p: 1,
-              borderRadius: 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center"
-            }}
-          >
-            {icon}
-          </Box>
-        </Box>
+  // Dados para gráfico de pizza (métodos de pagamento)
+  const pieChartData = Object.entries(totals.porFormaPagamento || {}).map(([key, value]) => ({
+    name: key === "dinheiro" ? "Dinheiro" :
+          key === "credito" ? "Crédito" :
+          key === "debito" ? "Débito" :
+          key === "pix" ? "PIX" :
+          key === "ticket" ? "Ticket" : key,
+    value
+  })).filter(item => item.value > 0);
 
-        {percentChange !== null && (
-          <Box sx={{ mt: 2 }}>
-            <Box sx={{ display: "flex", alignItems: "center" }}>
-              {isPositive ? (
-                <TrendingUpIcon color="success" fontSize="small" />
-              ) : (
-                <TrendingDownIcon color="error" fontSize="small" />
-              )}
-              <Typography
-                variant="body2"
-                sx={{
-                  ml: 0.5,
-                  color: isPositive ? "success.main" : "error.main"
-                }}
-              >
-                {Math.abs(percentChange).toFixed(1)}%
-              </Typography>
-              <Typography variant="caption" sx={{ ml: 1, color: "text.secondary" }}>
-                vs período anterior
-              </Typography>
-            </Box>
-            <LinearProgress
-              variant="determinate"
-              value={percentChange > 100 ? 100 : Math.abs(percentChange)}
-              color={isPositive ? "success" : "error"}
-              sx={{ mt: 1, height: 4, borderRadius: 2 }}
-            />
-          </Box>
-        )}
-      </CardContent>
-    </Card>
-  );
-};
+  // Cores para gráfico de pizza
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#9370DB'];
 
-// Componente para exibir o resumo do relatório
-export const ReportSummary = ({ data }) => {
-  return (
-    <Box sx={{ mb: 4 }}>
-      <Typography variant="h6" gutterBottom>
-        Resumo
-      </Typography>
-      <Grid container spacing={3}>
-        {data.map((item, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
-            <FinancialSummaryCard
-              title={item.title}
-              value={item.value}
-              previousValue={item.previousValue}
-              icon={item.icon}
-              color={item.color}
-            />
-          </Grid>
-        ))}
-      </Grid>
-    </Box>
-  );
-};
-
-// Componente para exibir métricas em cartões
-export const MetricCardsRow = ({ metrics }) => {
-  return (
-    <Grid container spacing={2} sx={{ mb: 3 }}>
-      {metrics.map((metric, index) => (
-        <Grid item xs={6} sm={4} md={3} lg={2} key={index}>
-          <Card>
-            <CardContent>
-              <Typography variant="caption" color="text.secondary">
-                {metric.label}
-              </Typography>
-              <Typography variant="h6" sx={{ mt: 1, fontWeight: "bold" }}>
-                {typeof metric.value === "number"
-                  ? metric.isPercentage
-                    ? `${metric.value.toFixed(1)}%`
-                    : metric.isCurrency
-                    ? `R$ ${metric.value.toFixed(2)}`
-                    : metric.value.toLocaleString()
-                  : metric.value}
-              </Typography>
-              {metric.change && (
-                <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
-                  {metric.change > 0 ? (
-                    <TrendingUpIcon color="success" fontSize="small" />
-                  ) : (
-                    <TrendingDownIcon color="error" fontSize="small" />
-                  )}
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      ml: 0.5,
-                      color: metric.change > 0 ? "success.main" : "error.main"
-                    }}
-                  >
-                    {Math.abs(metric.change).toFixed(1)}%
-                  </Typography>
+  // Renderizar baseado no tipo de visualização
+  if (viewType === "bar") {
+    return (
+      <Box>
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ bgcolor: "#e3f2fd", height: "100%" }}>
+              <CardContent>
+                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Box>
+                    <Typography variant="subtitle2" gutterBottom>Total de Receitas</Typography>
+                    <Typography variant="h5" color="primary">
+                      {formatCurrency(totals.receitas)}
+                    </Typography>
+                  </Box>
+                  <AttachMoneyIcon color="primary" />
                 </Box>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ bgcolor: "#ffebee", height: "100%" }}>
+              <CardContent>
+                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Box>
+                    <Typography variant="subtitle2" gutterBottom>Total de Despesas</Typography>
+                    <Typography variant="h5" color="error">
+                      {formatCurrency(totals.despesas)}
+                    </Typography>
+                  </Box>
+                  <MoneyOffIcon color="error" />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ bgcolor: "#e8f5e9", height: "100%" }}>
+              <CardContent>
+                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Box>
+                    <Typography variant="subtitle2" gutterBottom>Lucro</Typography>
+                    <Typography variant="h5" color="success.main">
+                      {formatCurrency(totals.lucro)}
+                    </Typography>
+                  </Box>
+                  <TrendingUpIcon color="success" />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ bgcolor: "#fff8e1", height: "100%" }}>
+              <CardContent>
+                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Box>
+                    <Typography variant="subtitle2" gutterBottom>Valores Pendentes</Typography>
+                    <Typography variant="h5" color="warning.main">
+                      {formatCurrency(totals.valoresPendentes)}
+                    </Typography>
+                  </Box>
+                  <HourglassEmptyIcon color="warning" />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
-      ))}
-    </Grid>
-  );
-};
 
-// Componente para exibir um cartão de relatório com loading
-export const ReportLoadingCard = ({ title }) => {
-  return (
-    <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <CardContent sx={{ flexGrow: 1 }}>
-        <Typography variant="h6" gutterBottom>
-          {title}
-        </Typography>
-        <Divider sx={{ my: 2 }} />
-        <Box
-          sx={{
-            height: 200,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center"
-          }}
-        >
-          <LinearProgress sx={{ width: "80%" }} />
+        <Typography variant="h6" gutterBottom>Resumo Financeiro</Typography>
+        <Box sx={{ height: 400, mb: 4 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={barChartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <RechartsTooltip formatter={(value) => formatCurrency(value)} />
+              <Legend />
+              <Bar dataKey="valor" fill="#8884d8" name="Valor" />
+            </BarChart>
+          </ResponsiveContainer>
         </Box>
-      </CardContent>
-    </Card>
-  );
-};
 
-// Componente para exibir uma seção de relatório
-export const ReportSection = ({ title, children }) => {
-  return (
-    <Box sx={{ mb: 4 }}>
-      <Typography variant="h6" gutterBottom>
-        {title}
-      </Typography>
-      <Divider sx={{ mb: 2 }} />
-      {children}
-    </Box>
-  );
+        {pieChartData.length > 0 && (
+          <>
+            <Typography variant="h6" gutterBottom>Por Método de Pagamento</Typography>
+            <Box sx={{ height: 400 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieChartData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={true}
+                    outerRadius={150}
+                    fill="#8884d8"
+                    dataKey="value"
+                    nameKey="name"
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
+                  >
+                    {pieChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip formatter={(value) => formatCurrency(value)} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </Box>
+          </>
+        )}
+      </Box>
+    );
+  } else if (viewType === "pie") {
+    return (
+      <Box>
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ bgcolor: "#e3f2fd", height: "100%" }}>
+              <CardContent>
+                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Box>
+                    <Typography variant="subtitle2" gutterBottom>Total de Receitas</Typography>
+                    <Typography variant="h5" color="primary">
+                      {formatCurrency(totals.receitas)}
+                    </Typography>
+                  </Box>
+                  <AttachMoneyIcon color="primary" />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ bgcolor: "#ffebee", height: "100%" }}>
+              <CardContent>
+                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Box>
+                    <Typography variant="subtitle2" gutterBottom>Total de Despesas</Typography>
+                    <Typography variant="h5" color="error">
+                      {formatCurrency(totals.despesas)}
+                    </Typography>
+                  </Box>
+                  <MoneyOffIcon color="error" />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ bgcolor: "#e8f5e9", height: "100%" }}>
+              <CardContent>
+                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Box>
+                    <Typography variant="subtitle2" gutterBottom>Lucro</Typography>
+                    <Typography variant="h5" color="success.main">
+                      {formatCurrency(totals.lucro)}
+                    </Typography>
+                  </Box>
+                  <TrendingUpIcon color="success" />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ bgcolor: "#fff8e1", height: "100%" }}>
+              <CardContent>
+                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Box>
+                    <Typography variant="subtitle2" gutterBottom>Valores Pendentes</Typography>
+                    <Typography variant="h5" color="warning.main">
+                      {formatCurrency(totals.valoresPendentes)}
+                    </Typography>
+                  </Box>
+                  <HourglassEmptyIcon color="warning" />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        {pieChartData.length > 0 && (
+          <>
+            <Typography variant="h6" gutterBottom>Por Método de Pagamento</Typography>
+            <Box sx={{ height: 400 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieChartData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={true}
+                    outerRadius={150}
+                    fill="#8884d8"
+                    dataKey="value"
+                    nameKey="name"
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
+                  >
+                    {pieChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip formatter={(value) => formatCurrency(value)} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </Box>
+          </>
+        )}
+      </Box>
+    );
+  } else {
+    // Visualização de tabela (padrão)
+    return (
+      <Box>
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ bgcolor: "#e3f2fd", height: "100%" }}>
+              <CardContent>
+                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Box>
+                    <Typography variant="subtitle2" gutterBottom>Total de Receitas</Typography>
+                    <Typography variant="h5" color="primary">
+                      {formatCurrency(totals.receitas)}
+                    </Typography>
+                  </Box>
+                  <AttachMoneyIcon color="primary" />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ bgcolor: "#ffebee", height: "100%" }}>
+              <CardContent>
+                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Box>
+                    <Typography variant="subtitle2" gutterBottom>Total de Despesas</Typography>
+                    <Typography variant="h5" color="error">
+                      {formatCurrency(totals.despesas)}
+                    </Typography>
+                  </Box>
+                  <MoneyOffIcon color="error" />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ bgcolor: "#e8f5e9", height: "100%" }}>
+              <CardContent>
+                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Box>
+                    <Typography variant="subtitle2" gutterBottom>Lucro</Typography>
+                    <Typography variant="h5" color="success.main">
+                      {formatCurrency(totals.lucro)}
+                    </Typography>
+                  </Box>
+                  <TrendingUpIcon color="success" />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ bgcolor: "#fff8e1", height: "100%" }}>
+              <CardContent>
+                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Box>
+                    <Typography variant="subtitle2" gutterBottom>Valores Pendentes</Typography>
+                    <Typography variant="h5" color="warning.main">
+                      {formatCurrency(totals.valoresPendentes)}
+                    </Typography>
+                  </Box>
+                  <HourglassEmptyIcon color="warning" />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        <Typography variant="h6" gutterBottom>Por Método de Pagamento</Typography>
+        <TableContainer component={Paper} sx={{ mb: 4 }}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Método de Pagamento</TableCell>
+                <TableCell align="right">Valor</TableCell>
+                <TableCell align="right">Percentual</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {Object.entries(totals.porFormaPagamento || {}).map(([key, value]) => {
+                const total = Object.values(totals.porFormaPagamento || {}).reduce((a, b) => a + b, 0);
+                const percentual = total > 0 ? (value / total) * 100 : 0;
+                
+                // Pular valores zerados
+                if (value === 0) return null;
+                
+                return (
+                  <TableRow key={key}>
+                    <TableCell>
+                      {key === "dinheiro" ? "Dinheiro" :
+                       key === "credito" ? "Crédito" :
+                       key === "debito" ? "Débito" :
+                       key === "pix" ? "PIX" :
+                       key === "ticket" ? "Ticket" : key}
+                    </TableCell>
+                    <TableCell align="right">{formatCurrency(value)}</TableCell>
+                    <TableCell align="right">{percentual.toFixed(2)}%</TableCell>
+                  </TableRow>
+                );
+              })}
+              <TableRow>
+                <TableCell><strong>Total</strong></TableCell>
+                <TableCell align="right">
+                  <strong>
+                    {formatCurrency(Object.values(totals.porFormaPagamento || {}).reduce((a, b) => a + b, 0))}
+                  </strong>
+                </TableCell>
+                <TableCell align="right">100%</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </TableContainer>
+
+        <Typography variant="h6" gutterBottom>Movimentações Recentes</Typography>
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Data</TableCell>
+                <TableCell>Tipo</TableCell>
+                <TableCell>Forma</TableCell>
+                <TableCell>Descrição</TableCell>
+                <TableCell align="right">Valor</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {data.movimentos && data.movimentos.slice(0, 10).map((movimento) => (
+                <TableRow key={movimento.id}>
+                  <TableCell>
+                    {new Date(movimento.timestamp).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    {movimento.tipo === "entrada" ? "Entrada" : "Saída"}
+                  </TableCell>
+                  <TableCell>
+                    {movimento.forma === "dinheiro" ? "Dinheiro" :
+                     movimento.forma === "credito" ? "Crédito" :
+                     movimento.forma === "debito" ? "Débito" :
+                     movimento.forma === "pix" ? "PIX" :
+                     movimento.forma === "ticket" ? "Ticket" : movimento.forma}
+                  </TableCell>
+                  <TableCell>{movimento.descricao || "--"}</TableCell>
+                  <TableCell align="right">
+                    <Typography
+                      sx={{
+                        color: movimento.tipo === "entrada" ? "success.main" : "error.main",
+                        fontWeight: "medium"
+                      }}
+                    >
+                      {formatCurrency(movimento.valor)}
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {(!data.movimentos || data.movimentos.length === 0) && (
+                <TableRow>
+                  <TableCell colSpan={5} align="center">
+                    Nenhuma movimentação encontrada
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Box>
+    );
+  }
 };

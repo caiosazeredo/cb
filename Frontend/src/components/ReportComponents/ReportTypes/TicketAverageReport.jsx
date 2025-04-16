@@ -13,24 +13,20 @@ import {
   Card,
   CardContent,
   Grid,
-  Chip,
   Divider,
   LinearProgress
 } from "@mui/material";
 import {
   BarChart,
   Bar,
-  PieChart,
-  Pie,
-  Cell,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip as RechartsTooltip,
   Legend,
-  ResponsiveContainer,
-  LineChart,
-  Line
+  ResponsiveContainer
 } from "recharts";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
@@ -56,63 +52,22 @@ export const TicketAverageReport = ({ data, viewType }) => {
     }).format(value);
   };
 
-  // Vamos usar uma versão simulada de dados para o exemplo
-  // Em um cenário real, esses dados viriam do backend
-  const realData = data.ticketData || [
-    { 
-      period: "Janeiro", 
-      ticketValue: 75.35, 
-      totalSales: 5430, 
-      quantity: 72, 
-      previousTicket: 68.20 
-    },
-    { 
-      period: "Fevereiro", 
-      ticketValue: 82.10, 
-      totalSales: 6972, 
-      quantity: 85, 
-      previousTicket: 75.35 
-    },
-    { 
-      period: "Março", 
-      ticketValue: 79.60, 
-      totalSales: 7642, 
-      quantity: 96, 
-      previousTicket: 82.10 
-    },
-    { 
-      period: "Abril", 
-      ticketValue: 85.92, 
-      totalSales: 8420, 
-      quantity: 98, 
-      previousTicket: 79.60 
-    },
-  ];
+  // Preparando os dados para visualização
+  const ticketData = data.ticketData || [];
+
+  // Estatísticas gerais
+  const avgTicket = data.avgTicket || ticketData.reduce((sum, item) => sum + item.ticketValue, 0) / ticketData.length;
+  const maxTicket = data.maxTicket || Math.max(...ticketData.map(item => item.ticketValue));
+  const minTicket = data.minTicket || Math.min(...ticketData.map(item => item.ticketValue));
+  const ticketTrend = data.ticketTrend || ((ticketData[ticketData.length - 1].ticketValue - ticketData[0].ticketValue) / ticketData[0].ticketValue) * 100;
 
   // Dados para diferentes visualizações
-  const chartData = realData.map(item => ({
+  const chartData = ticketData.map(item => ({
     name: item.period,
     ticketValue: item.ticketValue,
     previousValue: item.previousTicket || 0,
     change: item.previousTicket ? ((item.ticketValue - item.previousTicket) / item.previousTicket) * 100 : 0
   }));
-
-  // Dados por unidade (demonstração)
-  const unitData = data.unitData || [
-    { unit: "Unidade Centro", ticketValue: 87.50, sales: 12500, quantity: 143 },
-    { unit: "Unidade Norte", ticketValue: 76.20, sales: 9830, quantity: 129 },
-    { unit: "Unidade Sul", ticketValue: 92.15, sales: 14600, quantity: 158 },
-    { unit: "Unidade Leste", ticketValue: 83.70, sales: 10880, quantity: 130 },
-  ];
-
-  // Estatísticas gerais
-  const avgTicket = data.avgTicket || realData.reduce((sum, item) => sum + item.ticketValue, 0) / realData.length;
-  const maxTicket = data.maxTicket || Math.max(...realData.map(item => item.ticketValue));
-  const minTicket = data.minTicket || Math.min(...realData.map(item => item.ticketValue));
-  const ticketTrend = data.ticketTrend || ((realData[realData.length - 1].ticketValue - realData[0].ticketValue) / realData[0].ticketValue) * 100;
-
-  // Cores para gráficos
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#9370DB'];
 
   // Renderizar baseado no tipo de visualização
   if (viewType === "bar") {
@@ -209,40 +164,46 @@ export const TicketAverageReport = ({ data, viewType }) => {
                 fill="#8884d8"
                 name="Ticket Médio"
               />
-              <Bar
-                dataKey="previousValue"
-                fill="#82ca9d"
-                name="Período Anterior"
-              />
+              {chartData.some(item => item.previousValue > 0) && (
+                <Bar
+                  dataKey="previousValue"
+                  fill="#82ca9d"
+                  name="Período Anterior"
+                />
+              )}
             </BarChart>
           </ResponsiveContainer>
         </Box>
 
-        <Typography variant="h6" gutterBottom>
-          Ticket Médio por Unidade
-        </Typography>
-        <Box sx={{ height: 400 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={unitData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="unit" />
-              <YAxis />
-              <RechartsTooltip
-                formatter={(value, name) => {
-                  if (name === "ticketValue") 
-                    return formatCurrency(value);
-                  return value;
-                }}
-              />
-              <Legend />
-              <Bar
-                dataKey="ticketValue"
-                fill="#ffc658"
-                name="Ticket Médio"
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </Box>
+        {data.unitData && data.unitData.length > 0 && (
+          <>
+            <Typography variant="h6" gutterBottom>
+              Ticket Médio por Unidade
+            </Typography>
+            <Box sx={{ height: 400 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data.unitData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="unit" />
+                  <YAxis />
+                  <RechartsTooltip
+                    formatter={(value, name) => {
+                      if (name === "ticketValue") 
+                        return formatCurrency(value);
+                      return value;
+                    }}
+                  />
+                  <Legend />
+                  <Bar
+                    dataKey="ticketValue"
+                    fill="#ffc658"
+                    name="Ticket Médio"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </Box>
+          </>
+        )}
       </Box>
     );
   } else if (viewType === "pie") {
@@ -314,35 +275,6 @@ export const TicketAverageReport = ({ data, viewType }) => {
             </Card>
           </Grid>
         </Grid>
-
-        <Typography variant="h6" gutterBottom>
-          Distribuição do Ticket Médio por Unidade
-        </Typography>
-        <Box sx={{ height: 400, mb: 4 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={unitData}
-                cx="50%"
-                cy="50%"
-                labelLine={true}
-                outerRadius={140}
-                fill="#8884d8"
-                dataKey="ticketValue"
-                nameKey="unit"
-                label={({ unit, percent }) => `${unit}: ${(percent * 100).toFixed(1)}%`}
-              >
-                {unitData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <RechartsTooltip
-                formatter={(value) => formatCurrency(value)}
-              />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </Box>
 
         <Typography variant="h6" gutterBottom>
           Evolução do Ticket Médio ao Longo do Tempo
@@ -462,7 +394,7 @@ export const TicketAverageReport = ({ data, viewType }) => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {realData.map((item, index) => {
+              {ticketData.map((item, index) => {
                 const change = item.previousTicket 
                   ? ((item.ticketValue - item.previousTicket) / item.previousTicket) * 100 
                   : 0;
@@ -471,8 +403,8 @@ export const TicketAverageReport = ({ data, viewType }) => {
                   <TableRow key={index}>
                     <TableCell>{item.period}</TableCell>
                     <TableCell align="right">{formatCurrency(item.ticketValue)}</TableCell>
-                    <TableCell align="right">{formatCurrency(item.totalSales)}</TableCell>
-                    <TableCell align="right">{item.quantity}</TableCell>
+                    <TableCell align="right">{formatCurrency(item.totalSales || 0)}</TableCell>
+                    <TableCell align="right">{item.quantity || 0}</TableCell>
                     <TableCell align="right">
                       {item.previousTicket ? (
                         <Typography
@@ -515,53 +447,57 @@ export const TicketAverageReport = ({ data, viewType }) => {
           </Table>
         </TableContainer>
 
-        <Typography variant="h6" gutterBottom>
-          Ticket Médio por Unidade
-        </Typography>
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Unidade</TableCell>
-                <TableCell align="right">Ticket Médio</TableCell>
-                <TableCell align="right">Valor Total</TableCell>
-                <TableCell align="right">Quantidade</TableCell>
-                <TableCell align="right">Diferença da Média</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {unitData.map((unit, index) => {
-                const diffFromAvg = ((unit.ticketValue - avgTicket) / avgTicket) * 100;
-                
-                return (
-                  <TableRow key={index}>
-                    <TableCell>{unit.unit}</TableCell>
-                    <TableCell align="right">{formatCurrency(unit.ticketValue)}</TableCell>
-                    <TableCell align="right">{formatCurrency(unit.sales)}</TableCell>
-                    <TableCell align="right">{unit.quantity}</TableCell>
-                    <TableCell align="right">
-                      <Typography
-                        sx={{
-                          color: diffFromAvg >= 0 ? "success.main" : "error.main",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "flex-end"
-                        }}
-                      >
-                        {diffFromAvg >= 0 ? (
-                          <TrendingUpIcon fontSize="small" sx={{ mr: 0.5 }} />
-                        ) : (
-                          <TrendingDownIcon fontSize="small" sx={{ mr: 0.5 }} />
-                        )}
-                        {diffFromAvg >= 0 ? "+" : ""}{diffFromAvg.toFixed(2)}%
-                      </Typography>
-                    </TableCell>
+        {data.unitData && data.unitData.length > 0 && (
+          <>
+            <Typography variant="h6" gutterBottom>
+              Ticket Médio por Unidade
+            </Typography>
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Unidade</TableCell>
+                    <TableCell align="right">Ticket Médio</TableCell>
+                    <TableCell align="right">Valor Total</TableCell>
+                    <TableCell align="right">Quantidade</TableCell>
+                    <TableCell align="right">Diferença da Média</TableCell>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {data.unitData.map((unit, index) => {
+                    const diffFromAvg = ((unit.ticketValue - avgTicket) / avgTicket) * 100;
+                    
+                    return (
+                      <TableRow key={index}>
+                        <TableCell>{unit.unit}</TableCell>
+                        <TableCell align="right">{formatCurrency(unit.ticketValue)}</TableCell>
+                        <TableCell align="right">{formatCurrency(unit.sales || 0)}</TableCell>
+                        <TableCell align="right">{unit.quantity || 0}</TableCell>
+                        <TableCell align="right">
+                          <Typography
+                            sx={{
+                              color: diffFromAvg >= 0 ? "success.main" : "error.main",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "flex-end"
+                            }}
+                          >
+                            {diffFromAvg >= 0 ? (
+                              <TrendingUpIcon fontSize="small" sx={{ mr: 0.5 }} />
+                            ) : (
+                              <TrendingDownIcon fontSize="small" sx={{ mr: 0.5 }} />
+                            )}
+                            {diffFromAvg >= 0 ? "+" : ""}{diffFromAvg.toFixed(2)}%
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </>
+        )}
       </Box>
     );
   }
