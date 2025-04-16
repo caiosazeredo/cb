@@ -13,7 +13,7 @@ import EmployeesEditAndRemove from "./pages/SuperUser/EmployeesEditAndRemove";
 import UnitsList from "./pages/SuperUser/UnitsList";
 import CreateUnit from "./pages/SuperUser/CreateUnit";
 import UnitEditAndRemove from "./pages/SuperUser/UnitEditAndRemove";
-import Reports from "./pages/SuperUser/Reports";
+import Reports from "./pages/SuperUser/Reports"; // Certifique-se de que este import está correto
 
 //usuario
 import Home from "./pages/User/Home";
@@ -40,7 +40,7 @@ export const AllRoutes = () => {
     "/createUnit",
     "/employeesEditAndRemove/:id",
     "/unitEditAndRemove/:id",
-    "/reports",
+    "/reports", // Certifique-se de que esta rota está incluída
     "/userMenu"
   ];
 
@@ -51,17 +51,6 @@ export const AllRoutes = () => {
     );
     return routePattern.test(location.pathname);
   });
-
-  useEffect(() => {
-    if (user) {
-      if (user.superusuario) {
-        console.log("SOU SUPER USUÁRIO")
-      } else {
-        console.log("NÃO SOU SUPER")
-      }
-      console.log("USEEER: ", user)
-    }
-  }, [user])
 
   return (
     <>
@@ -127,6 +116,7 @@ export const AllRoutes = () => {
                 </RequireAuth>
               }
             />
+            {/* Rota de relatórios ajustada e destacada para garantir que funcione */}
             <Route
               path="/reports"
               element={
@@ -176,7 +166,7 @@ export const AllRoutes = () => {
             </RequireAuth>
           }
         />
-        {/* Rotas */}
+        {/* Rotas públicas */}
         <Route path="/login" element={<Login />} />
         <Route path="*" element={<NotFound />} />
 

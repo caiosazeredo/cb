@@ -29,17 +29,17 @@ import { SalesByUnitReport } from "./ReportTypes/SalesByUnitReport";
 import { DailySalesReport } from "./ReportTypes/DailySalesReport";
 import { TicketAverageReport } from "./ReportTypes/TicketAverageReport";
 import { PendingPaymentsReport } from "./ReportTypes/PendingPaymentsReport";
-import { TopProductsReport } from "./ReportTypes/TopProductsReport";
-import { UserPerformanceReport } from "./ReportTypes/UserPerformanceReport";
-import { CashFlowReport } from "./ReportTypes/CashFlowReport";
-import { ExpensesByCategoryReport } from "./ReportTypes/ExpensesByCategoryReport";
-import { SalesByHourReport } from "./ReportTypes/SalesByHourReport";
-import { SalesByDayReport } from "./ReportTypes/SalesByDayReport";
-import { ProfitMarginReport } from "./ReportTypes/ProfitMarginReport";
-import { TaxesSummaryReport } from "./ReportTypes/TaxesSummaryReport";
-import { UnitComparisonReport } from "./ReportTypes/UnitComparisonReport";
-import { SystemLogsReport } from "./ReportTypes/SystemLogsReport";
-import { LoginHistoryReport } from "./ReportTypes/LoginHistoryReport";
+// import { TopProductsReport } from "./ReportTypes/TopProductsReport";
+// import { UserPerformanceReport } from "./ReportTypes/UserPerformanceReport";
+// import { CashFlowReport } from "./ReportTypes/CashFlowReport";
+// import { ExpensesByCategoryReport } from "./ReportTypes/ExpensesByCategoryReport";
+// import { SalesByHourReport } from "./ReportTypes/SalesByHourReport";
+// import { SalesByDayReport } from "./ReportTypes/SalesByDayReport";
+// import { ProfitMarginReport } from "./ReportTypes/ProfitMarginReport";
+// import { TaxesSummaryReport } from "./ReportTypes/TaxesSummaryReport";
+// import { UnitComparisonReport } from "./ReportTypes/UnitComparisonReport";
+// import { SystemLogsReport } from "./ReportTypes/SystemLogsReport";
+// import { LoginHistoryReport } from "./ReportTypes/LoginHistoryReport";
 
 /**
  * Componente para visualização de relatórios

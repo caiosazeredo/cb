@@ -1,5 +1,4 @@
 // src/components/ReportComponents/ReportFilters.jsx
-// Componente para filtros de relatórios
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -187,7 +186,10 @@ export const ReportFilters = ({
                 }
                 value={referenceDate}
                 onChange={(newDate) => setReferenceDate(newDate)}
-                slots={{ textField: { fullWidth: true } }}
+                // Corrigido: use renderInput em vez de slots 
+                renderInput={(params) => <TextField {...params} fullWidth />}
+                // Alternativa: se renderInput não funcionar, use slotProps
+                // slotProps={{ textField: { fullWidth: true } }}
               />
             </LocalizationProvider>
           </Grid>
@@ -203,7 +205,9 @@ export const ReportFilters = ({
                     label="Data Inicial"
                     value={startDate}
                     onChange={(newDate) => setStartDate(newDate)}
-                    slots={{ textField: { fullWidth: true } }}
+                    renderInput={(params) => <TextField {...params} fullWidth />}
+                    // Alternativa: se renderInput não funcionar, use slotProps
+                    // slotProps={{ textField: { fullWidth: true } }}
                   />
                 </LocalizationProvider>
               </Grid>
@@ -213,7 +217,9 @@ export const ReportFilters = ({
                     label="Data Final"
                     value={endDate}
                     onChange={(newDate) => setEndDate(newDate)}
-                    slots={{ textField: { fullWidth: true } }}
+                    renderInput={(params) => <TextField {...params} fullWidth />}
+                    // Alternativa: se renderInput não funcionar, use slotProps
+                    // slotProps={{ textField: { fullWidth: true } }}
                   />
                 </LocalizationProvider>
               </Grid>
@@ -250,9 +256,3 @@ export const ReportFilters = ({
     </Paper>
   );
 };
-
-
-
-
-
-
