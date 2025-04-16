@@ -177,12 +177,12 @@ export const ReportFilters = ({
               <DatePicker
                 label={
                   periodType === "day"
-                    ? "Selecione o dia"
+                    ? "Selecione a data"
                     : periodType === "week"
-                    ? "Selecione a semana"
+                    ? "Selecione a data"
                     : periodType === "month"
-                    ? "Selecione o mês"
-                    : "Selecione o ano"
+                    ? "Selecione a data"
+                    : "Selecione a data"
                 }
                 value={referenceDate}
                 onChange={(newDate) => setReferenceDate(newDate)}
