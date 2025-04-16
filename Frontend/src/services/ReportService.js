@@ -1,6 +1,4 @@
 // src/services/ReportService.js
-// Serviço central para geração de relatórios
-
 import { db } from "../services/Firebase";
 import { 
   collection, 
@@ -8,8 +6,6 @@ import {
   query, 
   where, 
   orderBy, 
-  startAt, 
-  endAt,
   getDoc,
   doc,
   Timestamp 
@@ -31,23 +27,6 @@ import {
  * Classe de serviço para geração de relatórios
  */
 export class ReportService {
-  /**
-   * Converte um range de datas para timestamps do Firestore
-   * @param {Date} startDate - Data inicial
-   * @param {Date} endDate - Data final
-   * @returns {Object} Objeto com timestamps de início e fim
-   */
-  static getTimestampRange(startDate, endDate) {
-    // Garantir que temos início e fim do dia para capturar todos os registros
-    const start = startOfDay(startDate);
-    const end = endOfDay(endDate);
-    
-    return {
-      startTimestamp: Timestamp.fromDate(start),
-      endTimestamp: Timestamp.fromDate(end)
-    };
-  }
-
   /**
    * Obtém período baseado no tipo
    * @param {string} periodType - Tipo de período (day, week, month, year, custom)
@@ -90,7 +69,8 @@ export class ReportService {
     return {
       startDate: start,
       endDate: end,
-      ...this.getTimestampRange(start, end)
+      startTimestamp: Timestamp.fromDate(start),
+      endTimestamp: Timestamp.fromDate(end)
     };
   }
 
@@ -104,10 +84,10 @@ export class ReportService {
       const { unitId, periodType, referenceDate, startDate, endDate } = params;
       const period = this.getPeriodDates(periodType, referenceDate, startDate, endDate);
       
-      // Buscar movimentos do período
-      const movimentos = await this.fetchMovimentos(unitId, period.startTimestamp, period.endTimestamp);
+      // Buscar todas as unidades se unitId for "all"
+      const unidades = unitId === "all" ? await this.fetchUnits(true) : [{ id: unitId }];
       
-      // Calcular totais
+      // Totais iniciais
       const totals = {
         receitas: 0,
         despesas: 0,
@@ -122,22 +102,34 @@ export class ReportService {
         }
       };
       
-      // Processar movimentos para obter totais
-      movimentos.forEach(movimento => {
-        const valor = Number(movimento.valor) || 0;
+      const movimentos = [];
+      
+      // Para cada unidade, buscar todas as movimentações
+      for (const unidade of unidades) {
+        const movs = await this.fetchMovimentos(unidade.id, period.startTimestamp, period.endTimestamp);
+        movimentos.push(...movs);
         
-        // Classifica receitas (entradas) e despesas (saídas)
-        if (movimento.tipo === 'entrada') {
-          if (movimento.paymentStatus === 'pendente') {
-            totals.valoresPendentes += valor;
-          } else {
-            totals.receitas += valor;
-            totals.porFormaPagamento[movimento.forma] += valor;
+        // Processar movimentos para obter totais
+        movs.forEach(movimento => {
+          const valor = Number(movimento.valor) || 0;
+          
+          // Classifica receitas (entradas) e despesas (saídas)
+          if (movimento.tipo === 'entrada') {
+            if (movimento.paymentStatus === 'pendente') {
+              totals.valoresPendentes += valor;
+            } else {
+              totals.receitas += valor;
+              
+              // Adiciona ao total por forma de pagamento
+              if (totals.porFormaPagamento.hasOwnProperty(movimento.forma)) {
+                totals.porFormaPagamento[movimento.forma] += valor;
+              }
+            }
+          } else if (movimento.tipo === 'saida') {
+            totals.despesas += valor;
           }
-        } else if (movimento.tipo === 'saida') {
-          totals.despesas += valor;
-        }
-      });
+        });
+      }
       
       // Calcular lucro (receitas - despesas)
       totals.lucro = totals.receitas - totals.despesas;
@@ -160,7 +152,7 @@ export class ReportService {
   }
 
   /**
-   * Busca movimentos de uma unidade em um período específico
+   * Busca movimentos de todas as caixas de uma unidade em um período específico
    * @param {string} unitId - ID da unidade
    * @param {Timestamp} startTimestamp - Timestamp inicial
    * @param {Timestamp} endTimestamp - Timestamp final
@@ -170,27 +162,38 @@ export class ReportService {
     try {
       const movimentos = [];
       
-      // Primeiro, buscar todos os caixas da unidade
+      // Buscar caixas da unidade
       const caixasRef = collection(db, `unidades/${unitId}/caixas`);
       const caixasSnapshot = await getDocs(caixasRef);
+      
+      // Sem caixas, retorna array vazio
+      if (caixasSnapshot.empty) {
+        return movimentos;
+      }
       
       // Para cada caixa, buscar movimentos no período
       for (const caixaDoc of caixasSnapshot.docs) {
         const caixaId = caixaDoc.id;
         
-        // Query para movimentos no período
         const movimentosRef = collection(db, `unidades/${unitId}/caixas/${caixaId}/movimentos`);
-        const q = query(
-          movimentosRef,
-          where("timestamp", ">=", startTimestamp),
-          where("timestamp", "<=", endTimestamp),
-          where("ativo", "==", true)
-        );
+        let q;
+        
+        // Se temos um período definido
+        if (startTimestamp && endTimestamp) {
+          q = query(
+            movimentosRef,
+            where("timestamp", ">=", startTimestamp),
+            where("timestamp", "<=", endTimestamp)
+          );
+        } else {
+          // Busca todos os movimentos
+          q = movimentosRef;
+        }
         
         const movimentosSnapshot = await getDocs(q);
         
         // Adicionar movimentos à lista
-        movimentosSnapshot.docs.forEach(doc => {
+        movimentosSnapshot.forEach(doc => {
           const movimento = doc.data();
           movimentos.push({
             id: doc.id,
@@ -206,77 +209,7 @@ export class ReportService {
       return movimentos.sort((a, b) => b.timestamp - a.timestamp);
     } catch (error) {
       console.error("Erro ao buscar movimentos:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Busca logs do sistema
-   * @param {Object} params - Parâmetros para busca de logs
-   * @returns {Promise<Array>} Lista de logs
-   */
-  static async fetchSystemLogs(params) {
-    try {
-      const { userId, action, periodType, referenceDate, startDate, endDate } = params;
-      const period = this.getPeriodDates(periodType, referenceDate, startDate, endDate);
-      
-      const logsRef = collection(db, 'logs');
-      
-      // Construir query base
-      let q = query(
-        logsRef,
-        where("timestamp", ">=", period.startTimestamp),
-        where("timestamp", "<=", period.endTimestamp)
-      );
-      
-      // Adicionar filtro por usuário se fornecido
-      if (userId) {
-        q = query(q, where("uuidUser", "==", userId));
-      }
-      
-      // Adicionar filtro por ação/funcionalidade se fornecido
-      if (action) {
-        q = query(q, where("funcionalidade", "==", action));
-      }
-      
-      // Executar query
-      const logsSnapshot = await getDocs(q);
-      
-      // Processar logs
-      const logs = logsSnapshot.docs.map(doc => {
-        const log = doc.data();
-        return {
-          id: doc.id,
-          ...log,
-          // Normalizar timestamp para Date
-          timestamp: log.timestamp?.toDate() || new Date()
-        };
-      });
-      
-      // Ordenar por timestamp (mais recente primeiro)
-      return logs.sort((a, b) => b.timestamp - a.timestamp);
-    } catch (error) {
-      console.error("Erro ao buscar logs:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Busca usuários do sistema
-   * @returns {Promise<Array>} Lista de usuários
-   */
-  static async fetchUsers() {
-    try {
-      const usersRef = collection(db, 'Users');
-      const usersSnapshot = await getDocs(usersRef);
-      
-      return usersSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-    } catch (error) {
-      console.error("Erro ao buscar usuários:", error);
-      throw error;
+      return []; // Retornar array vazio em caso de erro
     }
   }
 
@@ -288,21 +221,18 @@ export class ReportService {
   static async fetchUnits(onlyActive = true) {
     try {
       const unidadesRef = collection(db, 'unidades');
-      let q = unidadesRef;
+      const unidadesSnapshot = await getDocs(unidadesRef);
       
-      if (onlyActive) {
-        q = query(unidadesRef, where("ativo", "==", true));
-      }
-      
-      const unidadesSnapshot = await getDocs(q);
-      
-      return unidadesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      // Filtrar unidades conforme o critério de ativo
+      return unidadesSnapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }))
+        .filter(unit => !onlyActive || unit.ativo);
     } catch (error) {
       console.error("Erro ao buscar unidades:", error);
-      throw error;
+      return []; // Retornar array vazio em caso de erro
     }
   }
 
@@ -316,15 +246,10 @@ export class ReportService {
       const { unitId, periodType, referenceDate, startDate, endDate } = params;
       const period = this.getPeriodDates(periodType, referenceDate, startDate, endDate);
       
-      // Buscar movimentos do período
-      const movimentos = await this.fetchMovimentos(unitId, period.startTimestamp, period.endTimestamp);
+      // Buscar todas as unidades se unitId for "all"
+      const unidades = unitId === "all" ? await this.fetchUnits(true) : [{ id: unitId }];
       
-      // Filtrar apenas movimentos de entrada (vendas)
-      const vendas = movimentos.filter(movimento => 
-        movimento.tipo === 'entrada' && movimento.paymentStatus === 'realizado'
-      );
-      
-      // Calcular total por método de pagamento
+      // Totais iniciais por método de pagamento
       const totalPorMetodo = {
         dinheiro: 0,
         credito: 0,
@@ -335,17 +260,27 @@ export class ReportService {
       
       let totalGeral = 0;
       
-      vendas.forEach(venda => {
-        const valor = Number(venda.valor) || 0;
-        if (totalPorMetodo.hasOwnProperty(venda.forma)) {
-          totalPorMetodo[venda.forma] += valor;
-          totalGeral += valor;
-        }
-      });
+      // Para cada unidade, buscar todas as movimentações
+      for (const unidade of unidades) {
+        const movs = await this.fetchMovimentos(unidade.id, period.startTimestamp, period.endTimestamp);
+        
+        // Filtrar apenas movimentos de entrada (vendas) e realizados
+        const vendas = movs.filter(movimento => 
+          movimento.tipo === 'entrada' && movimento.paymentStatus === 'realizado'
+        );
+        
+        // Adicionar ao total por método
+        vendas.forEach(venda => {
+          const valor = Number(venda.valor) || 0;
+          if (totalPorMetodo.hasOwnProperty(venda.forma)) {
+            totalPorMetodo[venda.forma] += valor;
+            totalGeral += valor;
+          }
+        });
+      }
       
-      // Calcular percentuais
-      const resultado = Object.keys(totalPorMetodo).map(metodo => {
-        const valor = totalPorMetodo[metodo];
+      // Converter para o formato esperado pelo frontend
+      const resultado = Object.entries(totalPorMetodo).map(([metodo, valor]) => {
         const percentual = totalGeral > 0 ? (valor / totalGeral) * 100 : 0;
         
         return {
@@ -443,4 +378,332 @@ export class ReportService {
     }
   }
 
+  /**
+   * Gera relatório de vendas diárias
+   * @param {Object} params - Parâmetros do relatório
+   * @returns {Promise<Object>} Dados do relatório
+   */
+  static async generateDailySales(params) {
+    try {
+      const { unitId, periodType, referenceDate, startDate, endDate } = params;
+      const period = this.getPeriodDates(periodType, referenceDate, startDate, endDate);
+      
+      // Buscar todas as unidades se unitId for "all"
+      const unidades = unitId === "all" ? await this.fetchUnits(true) : [{ id: unitId }];
+      
+      // Mapa para agregar vendas por dia
+      const vendasPorDia = new Map();
+      
+      // Para cada unidade, buscar movimentos
+      for (const unidade of unidades) {
+        const movimentos = await this.fetchMovimentos(
+          unidade.id, 
+          period.startTimestamp, 
+          period.endTimestamp
+        );
+        
+        // Filtrar vendas
+        const vendas = movimentos.filter(movimento => 
+          movimento.tipo === 'entrada' && movimento.paymentStatus === 'realizado'
+        );
+        
+        // Agrupar por dia
+        vendas.forEach(venda => {
+          const dataStr = format(venda.timestamp, 'yyyy-MM-dd');
+          const valor = Number(venda.valor) || 0;
+          
+          if (vendasPorDia.has(dataStr)) {
+            const dados = vendasPorDia.get(dataStr);
+            dados.value += valor;
+            dados.quantity += 1;
+          } else {
+            vendasPorDia.set(dataStr, {
+              date: format(venda.timestamp, 'dd/MM/yyyy'),
+              value: valor,
+              quantity: 1
+            });
+          }
+        });
+      }
+      
+      // Converter o mapa para um array e ordenar por data
+      const salesData = Array.from(vendasPorDia.values()).sort((a, b) => {
+        return new Date(a.date) - new Date(b.date);
+      });
+      
+      // Calcular totais
+      const totalSales = salesData.reduce((sum, day) => sum + day.value, 0);
+      const totalQuantity = salesData.reduce((sum, day) => sum + day.quantity, 0);
+      
+      // Encontrar o melhor dia
+      const bestDay = salesData.length > 0 
+        ? salesData.reduce((best, current) => current.value > best.value ? current : best, salesData[0])
+        : { date: '-', value: 0 };
+      
+      return {
+        period: {
+          startDate: period.startDate,
+          endDate: period.endDate,
+          formattedStart: format(period.startDate, 'dd/MM/yyyy'),
+          formattedEnd: format(period.endDate, 'dd/MM/yyyy')
+        },
+        salesData,
+        totalSales,
+        totalQuantity,
+        bestDay,
+        unitId
+      };
+    } catch (error) {
+      console.error("Erro ao gerar relatório de vendas diárias:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Gera relatório de ticket médio
+   * @param {Object} params - Parâmetros do relatório
+   * @returns {Promise<Object>} Dados do relatório
+   */
+  static async generateTicketAverage(params) {
+    try {
+      const { unitId, periodType, referenceDate, startDate, endDate } = params;
+      const period = this.getPeriodDates(periodType, referenceDate, startDate, endDate);
+      
+      // Se quisermos dados por unidade
+      const porUnidade = unitId === "all";
+      
+      // Buscar unidades conforme parâmetro
+      const unidades = porUnidade 
+        ? await this.fetchUnits(true) 
+        : [{ id: unitId }];
+      
+      // Array para dados de ticket médio por período
+      const ticketData = [];
+      
+      // Array para dados de ticket médio por unidade
+      const unitData = [];
+      
+      // Para cada unidade
+      for (const unidade of unidades) {
+        const movimentos = await this.fetchMovimentos(
+          unidade.id, 
+          period.startTimestamp, 
+          period.endTimestamp
+        );
+        
+        // Filtrar vendas
+        const vendas = movimentos.filter(movimento => 
+          movimento.tipo === 'entrada' && movimento.paymentStatus === 'realizado'
+        );
+        
+        // Se não há vendas, pular
+        if (vendas.length === 0) continue;
+        
+        // Calcular ticket médio da unidade
+        const totalVendas = vendas.reduce((sum, venda) => sum + (Number(venda.valor) || 0), 0);
+        const ticketMedioUnidade = totalVendas / vendas.length;
+        
+        // Se queremos dados por unidade, adicionar ao array de unidades
+        if (porUnidade) {
+          unitData.push({
+            unit: unidade.nome,
+            ticketValue: ticketMedioUnidade,
+            sales: totalVendas,
+            quantity: vendas.length
+          });
+        }
+        
+        // Agrupar por período (mês/semana conforme o tipo de período)
+        if (periodType === 'year' || periodType === 'custom' && period.endDate - period.startDate > 60 * 24 * 60 * 60 * 1000) {
+          // Agrupar por mês
+          const vendasPorMes = new Map();
+          
+          vendas.forEach(venda => {
+            const mesStr = format(venda.timestamp, 'yyyy-MM');
+            const valor = Number(venda.valor) || 0;
+            
+            if (vendasPorMes.has(mesStr)) {
+              const dados = vendasPorMes.get(mesStr);
+              dados.totalSales += valor;
+              dados.quantity += 1;
+            } else {
+              vendasPorMes.set(mesStr, {
+                period: format(venda.timestamp, 'MMM/yyyy'),
+                totalSales: valor,
+                quantity: 1
+              });
+            }
+          });
+          
+          // Calcular ticket médio por mês
+          vendasPorMes.forEach((dados, mesStr) => {
+            const previousMonth = this.getPreviousMonth(mesStr);
+            const previousData = vendasPorMes.get(previousMonth);
+            
+            ticketData.push({
+              period: dados.period,
+              ticketValue: dados.totalSales / dados.quantity,
+              totalSales: dados.totalSales,
+              quantity: dados.quantity,
+              previousTicket: previousData ? previousData.totalSales / previousData.quantity : null
+            });
+          });
+        } else {
+          // Agrupar por semana ou dia, dependendo do período
+          const vendasPorPeriodo = new Map();
+          
+          vendas.forEach(venda => {
+            // Para períodos curtos, usamos dia
+            const periodoStr = format(venda.timestamp, 'yyyy-MM-dd');
+            const valor = Number(venda.valor) || 0;
+            
+            if (vendasPorPeriodo.has(periodoStr)) {
+              const dados = vendasPorPeriodo.get(periodoStr);
+              dados.totalSales += valor;
+              dados.quantity += 1;
+            } else {
+              vendasPorPeriodo.set(periodoStr, {
+                period: format(venda.timestamp, 'dd/MM/yyyy'),
+                totalSales: valor,
+                quantity: 1
+              });
+            }
+          });
+          
+          // Calcular ticket médio por período
+          const periodos = Array.from(vendasPorPeriodo.keys()).sort();
+          
+          periodos.forEach((periodoStr, index) => {
+            const dados = vendasPorPeriodo.get(periodoStr);
+            const previousData = index > 0 ? vendasPorPeriodo.get(periodos[index - 1]) : null;
+            
+            ticketData.push({
+              period: dados.period,
+              ticketValue: dados.totalSales / dados.quantity,
+              totalSales: dados.totalSales,
+              quantity: dados.quantity,
+              previousTicket: previousData ? previousData.totalSales / previousData.quantity : null
+            });
+          });
+        }
+      }
+      
+      // Ordenar por período
+      ticketData.sort((a, b) => {
+        // Converter para datas para comparação correta
+        const dateA = parseISO(a.period.split('/').reverse().join('-'));
+        const dateB = parseISO(b.period.split('/').reverse().join('-'));
+        return dateA - dateB;
+      });
+      
+      // Calcular estatísticas gerais
+      const avgTicket = ticketData.length > 0 
+        ? ticketData.reduce((sum, item) => sum + item.ticketValue, 0) / ticketData.length 
+        : 0;
+      
+      const maxTicket = ticketData.length > 0 
+        ? Math.max(...ticketData.map(item => item.ticketValue)) 
+        : 0;
+        
+      const minTicket = ticketData.length > 0 
+        ? Math.min(...ticketData.map(item => item.ticketValue)) 
+        : 0;
+        
+      const ticketTrend = ticketData.length >= 2 
+        ? ((ticketData[ticketData.length - 1].ticketValue - ticketData[0].ticketValue) / ticketData[0].ticketValue) * 100 
+        : 0;
+      
+      return {
+        period: {
+          startDate: period.startDate,
+          endDate: period.endDate,
+          formattedStart: format(period.startDate, 'dd/MM/yyyy'),
+          formattedEnd: format(period.endDate, 'dd/MM/yyyy')
+        },
+        ticketData,
+        unitData,
+        avgTicket,
+        maxTicket,
+        minTicket,
+        ticketTrend,
+        unitId
+      };
+    } catch (error) {
+      console.error("Erro ao gerar relatório de ticket médio:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Gera o mês anterior em formato string
+   * @param {string} mesStr - Mês atual em formato 'yyyy-MM'
+   * @returns {string} Mês anterior em formato 'yyyy-MM'
+   */
+  static getPreviousMonth(mesStr) {
+    const [ano, mes] = mesStr.split('-').map(Number);
+    
+    if (mes === 1) {
+      return `${ano - 1}-12`;
+    } else {
+      const mesPrevio = mes - 1;
+      return `${ano}-${mesPrevio.toString().padStart(2, '0')}`;
+    }
+  }
+
+  /**
+   * Gera relatório de pagamentos pendentes
+   * @param {Object} params - Parâmetros do relatório
+   * @returns {Promise<Object>} Dados do relatório
+   */
+  static async generatePendingPayments(params) {
+    try {
+      const { unitId, periodType, referenceDate, startDate, endDate } = params;
+      const period = this.getPeriodDates(periodType, referenceDate, startDate, endDate);
+      
+      // Buscar todas as unidades se unitId for "all"
+      const unidades = unitId === "all" ? await this.fetchUnits(true) : [{ id: unitId }];
+      
+      // Array para pagamentos pendentes
+      const pendingPayments = [];
+      
+      // Para cada unidade
+      for (const unidade of unidades) {
+        const movimentos = await this.fetchMovimentos(
+          unidade.id, 
+          period.startTimestamp, 
+          period.endTimestamp
+        );
+        
+        // Filtrar apenas pagamentos pendentes
+        const pendentes = movimentos.filter(movimento => 
+          movimento.tipo === 'entrada' && movimento.paymentStatus === 'pendente'
+        );
+        
+        // Adicionar a informação da unidade
+        pendentes.forEach(movimento => {
+          pendingPayments.push({
+            ...movimento,
+            unidade: unidade.nome
+          });
+        });
+      }
+      
+      // Ordenar por data (mais antigos primeiro)
+      pendingPayments.sort((a, b) => a.timestamp - b.timestamp);
+      
+      return {
+        period: {
+          startDate: period.startDate,
+          endDate: period.endDate,
+          formattedStart: format(period.startDate, 'dd/MM/yyyy'),
+          formattedEnd: format(period.endDate, 'dd/MM/yyyy')
+        },
+        pendingPayments,
+        unitId
+      };
+    } catch (error) {
+      console.error("Erro ao gerar relatório de pagamentos pendentes:", error);
+      throw error;
+    }
+  }
 }

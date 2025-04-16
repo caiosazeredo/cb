@@ -29,17 +29,6 @@ import { SalesByUnitReport } from "./ReportTypes/SalesByUnitReport";
 import { DailySalesReport } from "./ReportTypes/DailySalesReport";
 import { TicketAverageReport } from "./ReportTypes/TicketAverageReport";
 import { PendingPaymentsReport } from "./ReportTypes/PendingPaymentsReport";
-// import { TopProductsReport } from "./ReportTypes/TopProductsReport";
-// import { UserPerformanceReport } from "./ReportTypes/UserPerformanceReport";
-// import { CashFlowReport } from "./ReportTypes/CashFlowReport";
-// import { ExpensesByCategoryReport } from "./ReportTypes/ExpensesByCategoryReport";
-// import { SalesByHourReport } from "./ReportTypes/SalesByHourReport";
-// import { SalesByDayReport } from "./ReportTypes/SalesByDayReport";
-// import { ProfitMarginReport } from "./ReportTypes/ProfitMarginReport";
-// import { TaxesSummaryReport } from "./ReportTypes/TaxesSummaryReport";
-// import { UnitComparisonReport } from "./ReportTypes/UnitComparisonReport";
-// import { SystemLogsReport } from "./ReportTypes/SystemLogsReport";
-// import { LoginHistoryReport } from "./ReportTypes/LoginHistoryReport";
 
 /**
  * Componente para visualização de relatórios
@@ -81,33 +70,11 @@ export const ReportViewer = ({
         return <TicketAverageReport data={reportData} viewType={viewType} />;
       case "pendingPayments":
         return <PendingPaymentsReport data={reportData} viewType={viewType} />;
-      case "topProducts":
-        return <TopProductsReport data={reportData} viewType={viewType} />;
-      case "userPerformance":
-        return <UserPerformanceReport data={reportData} viewType={viewType} />;
-      case "cashFlow":
-        return <CashFlowReport data={reportData} viewType={viewType} />;
-      case "expensesByCategory":
-        return <ExpensesByCategoryReport data={reportData} viewType={viewType} />;
-      case "salesByHour":
-        return <SalesByHourReport data={reportData} viewType={viewType} />;
-      case "salesByDay":
-        return <SalesByDayReport data={reportData} viewType={viewType} />;
-      case "profitMargin":
-        return <ProfitMarginReport data={reportData} viewType={viewType} />;
-      case "taxesSummary":
-        return <TaxesSummaryReport data={reportData} viewType={viewType} />;
-      case "unitComparison":
-        return <UnitComparisonReport data={reportData} viewType={viewType} />;
-      case "systemLogs":
-        return <SystemLogsReport data={reportData} viewType={viewType} />;
-      case "loginHistory":
-        return <LoginHistoryReport data={reportData} viewType={viewType} />;
       default:
         return (
           <Box sx={{ p: 3, textAlign: "center" }}>
             <Typography variant="h6" color="text.secondary">
-              Relatório não disponível
+              Relatório em desenvolvimento
             </Typography>
           </Box>
         );
@@ -129,28 +96,6 @@ export const ReportViewer = ({
         return "Ticket Médio";
       case "pendingPayments":
         return "Pagamentos Pendentes";
-      case "topProducts":
-        return "Produtos Mais Vendidos";
-      case "userPerformance":
-        return "Desempenho de Funcionários";
-      case "cashFlow":
-        return "Fluxo de Caixa";
-      case "expensesByCategory":
-        return "Despesas por Categoria";
-      case "salesByHour":
-        return "Vendas por Hora";
-      case "salesByDay":
-        return "Vendas por Dia da Semana";
-      case "profitMargin":
-        return "Margem de Lucro";
-      case "taxesSummary":
-        return "Resumo de Impostos";
-      case "unitComparison":
-        return "Comparativo entre Unidades";
-      case "systemLogs":
-        return "Logs do Sistema";
-      case "loginHistory":
-        return "Histórico de Login";
       default:
         return "Relatório";
     }
