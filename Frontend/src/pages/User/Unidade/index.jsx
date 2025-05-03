@@ -1,13 +1,9 @@
 // src/pages/Unidade/index.jsx
-import { useState, useEffect, useContext } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { Container, Typography, Grid, CircularProgress } from "@mui/material";
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
+import { Container, Typography, Grid } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
-import Swal from "sweetalert2";
-
-import Api from "../../../helpers/Api";
-import AuthContext from "../../../helpers/AuthContext";
 
 const CaixaCard = styled(Grid)(({ theme }) => ({
   padding: theme.spacing(2),
@@ -23,86 +19,51 @@ const CaixaCard = styled(Grid)(({ theme }) => ({
   },
 }));
 
+const API_URL = 'http://localhost:3000/api';
+
 const UnidadePage = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
-  const api = Api();
-  const auth = useContext(AuthContext);
-
   const [caixas, setCaixas] = useState([]);
   const [unidade, setUnidade] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Buscar dados da unidade
-  const fetchUnidadeInfo = async () => {
-    try {
-      const response = await api.getUnit(id);
-      if (response.success) {
-        setUnidade(response.data);
-      } else {
-        handleApiError(response.error);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Busca dados da unidade
+        const unidadeResponse = await fetch(`${API_URL}/unidades/${id}`);
+        if (!unidadeResponse.ok) throw new Error('Erro ao buscar unidade');
+        const unidadeData = await unidadeResponse.json();
+        setUnidade(unidadeData);
+
+        // Busca caixas da unidade
+        const caixasResponse = await fetch(`${API_URL}/unidades/${id}/caixas`);
+        if (!caixasResponse.ok) throw new Error('Erro ao buscar caixas');
+        const caixasData = await caixasResponse.json();
+        setCaixas(caixasData);
+      } catch (error) {
+        console.error('Erro:', error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Erro ao buscar informações da unidade:", error);
-      setError("Falha ao carregar os dados da unidade. Tente novamente mais tarde.");
-    }
-  };
+    };
 
-  // Buscar caixas da unidade
-  const fetchCaixas = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+    fetchData();
+  }, [id]);
 
-      const response = await api.allCaixas(id);
+  if (loading) {
+    return <Container><Typography>Carregando...</Typography></Container>;
+  }
 
-      if (response.success) {
-        setCaixas(response.data);
-      } else {
-        handleApiError(response.error);
-      }
-    } catch (error) {
-      console.error("Erro ao buscar caixas:", error);
-      setError("Falha ao carregar os caixas. Tente novamente mais tarde.");
-
-      Swal.fire({
-        icon: 'error',
-        title: 'Erro ao carregar caixas',
-        text: 'Verifique sua conexão e tente novamente.',
-        showConfirmButton: true,
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Tratar erros de API
-  const handleApiError = (errorMessage) => {
-    if (errorMessage?.includes('Sessão expirada') ||
-      errorMessage?.includes('Autenticação necessária')) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Sessão Expirada',
-        text: 'Por favor, faça login novamente.',
-        showConfirmButton: true,
-      }).then(() => {
-        auth.signout();
-        navigate('/login');
-      });
-    } else {
-      Swal.fire({
-        icon: 'error',
-        title: 'Erro',
-        text: errorMessage || 'Erro desconhecido. Tente novamente.',
-        showConfirmButton: true,
-      });
-      setError(errorMessage || "Ocorreu um erro inesperado");
-    }
-  };
+  if (error) {
+    return <Container><Typography color="error">{error}</Typography></Container>;
+  }
 
   const handleCaixaClick = (caixaId) => {
-    navigate(`/unidade/${id}/caixa/${caixaId}`);
+    // Aqui você pode adicionar a navegação para a página específica do caixa
+    console.log(`Caixa ${caixaId} clicado`);
   };
 
   const getStatusColor = (status) => {
@@ -112,70 +73,6 @@ const UnidadePage = () => {
     };
     return colors[status] || '#ffbb33';
   };
-
-  // Efeito para buscar dados ao montar o componente
-  useEffect(() => {
-    if (!auth.user) {
-      navigate('/login');
-      return;
-    } else {
-      // Se não é superusuário, verificar se tem acesso à unidade
-      if (!auth.user.superusuario) {
-        const allowedUnits = auth.user.selectedUnits || [];
-        if (!allowedUnits.includes(id)) {
-          Swal.fire({
-            icon: "error",
-            title: "Acesso Negado",
-            text: "Você não tem permissão para acessar esta unidade.",
-            showConfirmButton: true
-          }).then(() => {
-            navigate("/");
-          });
-          return;
-        }
-      }
-    }
-
-    const fetchData = async () => {
-      await fetchUnidadeInfo();
-      await fetchCaixas();
-    };
-
-    fetchData();
-  }, [id, auth.user]);
-
-  if (loading) {
-    return (
-      <Container sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-        <CircularProgress size={60} />
-      </Container>
-    );
-  }
-
-  if (error) {
-    return (
-      <Container>
-        <Typography color="error" variant="h6" sx={{ textAlign: 'center', mt: 4 }}>
-          {error}
-        </Typography>
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 20 }}>
-          <button
-            onClick={() => fetchCaixas()}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#f44336',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            Tentar Novamente
-          </button>
-        </div>
-      </Container>
-    );
-  }
 
   return (
     <Container sx={{ py: 4 }}>

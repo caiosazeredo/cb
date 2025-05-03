@@ -1,9 +1,5 @@
-// src/pages/Login/index.jsx
-// ARQUIVO SUBSTITUÍDO DIRETAMENTE - NÃO MODIFICAR MANUALMENTE
-
-import { useContext, useState, useEffect } from "react";
+import { useContext, useState } from "react";
 import Swal from "sweetalert2";
-import { useNavigate } from "react-router-dom";
 
 import {
   Container,
@@ -13,146 +9,121 @@ import {
   BoxTop,
   BoxMiddle
 } from "./styles";
+import { useNavigate } from "react-router-dom";
 
 import Logo from '../../assets/logo.png';
 import { InputTextField } from "../../components/InputTextField/InputTextField";
 import { ButtonMui } from "../../components/ButtonMui/ButtonMui";
 import AuthContext from "../../helpers/AuthContext";
 
-// Import Firebase auth diretamente
-import { auth } from "../../services/Firebase";
-import { sendPasswordResetEmail } from "firebase/auth";
+import Api from "../../helpers/Api";
+
+
+
 
 function Login() {
   const navigate = useNavigate();
-  const { user, signin, loading } = useContext(AuthContext);
+  const auth = useContext(AuthContext);
+  const api = Api();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Se o usuário já está logado, redireciona para home
-  useEffect(() => {
-    if (user) {
-      console.log("Usuário já está logado:", user.email);
-      navigate('/');
-    }
-  }, [user, navigate]);
 
-  // Função para login
+
+  const [email, setEmail] = useState("lfalmeida97@gmail.com");
+  const [password, setPassword] = useState("123456");
+
+  const [loading, setLoading] = useState(false);
+
+
   const handleSubmitLogin = async (event) => {
     event.preventDefault();
-    
-    // Validação simples
-    if (!email || !password) {
-      Swal.fire({
-        icon: "warning",
-        title: "Campos obrigatórios",
-        text: "Por favor, preencha email e senha.",
-        timer: 3000
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-    console.log("Tentando login para:", email);
-    
+    setLoading(true)
     try {
-      // Tenta login através do AuthContext
-      const result = await signin(email, password);
-      
-      if (result.error) {
-        console.error("Erro de login:", result.error);
+      const json = await auth.signin(email, password);
+      if (json.error) {
         Swal.fire({
           icon: "error",
-          title: "Erro de login",
-          text: result.error,
-          showConfirmButton: true
+          title: json.error,
+          showConfirmButton: false,
+          timer: 3000
         });
       } else {
-        console.log("Login bem-sucedido, redirecionando...");
-        navigate('/');
+        navigate('/')
       }
     } catch (error) {
-      console.error("Erro no processo de login:", error);
-      
-      Swal.fire({
-        icon: "error",
-        title: "Erro ao fazer login",
-        text: "Ocorreu um erro ao processar seu login. Tente novamente.",
-        showConfirmButton: true
-      });
+      alert("ERROR: ", error)
     } finally {
-      setIsSubmitting(false);
+      setLoading(false)
     }
   };
 
-  // Função para redefinição de senha
   const handleForgetPasswordSwal = async () => {
-    try {
-      const { isConfirmed, value: userEmail } = await Swal.fire({
-        title: "Redefinir senha",
-        input: "text",
-        inputValue: email, // Pré-preenche com o email já digitado
-        inputLabel: "Informe o seu e-mail",
-        inputPlaceholder: "Digite seu e-mail.",
-        showCancelButton: true,
-        confirmButtonText: "Enviar",
-        cancelButtonText: "Cancelar",
-        confirmButtonColor: "#FEC32E",
-        cancelButtonColor: "#999999",
-        color: "#333333",
-        background: "#FFFFFF",
-        inputValidator: (value) => {
-          if (!value) {
-            return "Por favor, insira um e-mail.";
-          }
-          
-          const emailRegex = /\S+@\S+\.\S+/;
-          if (!emailRegex.test(value)) {
-            return "Por favor, insira um e-mail válido.";
-          }
-        },
-      });
+    const { isConfirmed, value: email } = await Swal.fire({
+      title: "Redefinir senha",
+      input: "text",
+      inputLabel: "Informe o seu e-mail",
+      inputPlaceholder: "Digite seu e-mail.",
+      showCancelButton: true,
+      confirmButtonText: "Enviar",
+      cancelButtonText: "Cancelar",
 
-      if (isConfirmed) {
-        console.log("Enviando email de recuperação para:", userEmail);
-        // Tenta enviar email de redefinição
-        await sendPasswordResetEmail(auth, userEmail);
-        
-        Swal.fire({
-          icon: "success",
-          title: "E-mail enviado!",
-          text: `Um e-mail de redefinição de senha foi enviado para ${userEmail}.`,
-          showConfirmButton: true
-        });
-      }
-    } catch (error) {
-      console.error("Erro ao enviar email de recuperação:", error);
-      
-      let errorMessage = "Erro ao enviar e-mail de recuperação. Tente novamente mais tarde.";
-      
-      if (error.code === 'auth/user-not-found') {
-        errorMessage = "Não foi encontrado um usuário com este e-mail.";
-      }
-      
-      Swal.fire({
-        icon: "error",
-        title: "Erro",
-        text: errorMessage,
-        showConfirmButton: true
-      });
+      //ajuste de cores
+      confirmButtonColor: "#FEC32E",
+      cancelButtonColor: "#999999",
+      color: "#333333",
+      background: "#FFFFFF",
+
+
+      //verificação de dado do input
+      inputValidator: (value) => {
+        // Verifica se está vazio
+        if (!value) {
+          return "Por favor, insira um e-mail.";
+        }
+        // Verifica se o texto corresponde ao formato de um e-mail
+        const emailRegex = /\S+@\S+\.\S+/;
+        if (!emailRegex.test(value)) {
+          return "Por favor, insira um e-mail válido.";
+        }
+      },
+    });
+
+    if (isConfirmed) {
+
+      const handleSubmitForgetPassword = async (email) => {
+        try {
+          const json = await api.resetPassword(email);
+          if (json.error) {
+            Swal.fire({
+              icon: "error",
+              title: json.error,
+              showConfirmButton: true,
+            });
+          } else {
+            Swal.fire({
+              icon: "success",
+              title: json.message,
+              showConfirmButton: false,
+              timer: 3000,
+            });
+          }
+        } catch (error) {
+          console.log("Error: ", error)
+          Swal.fire({
+            icon: "error",
+            title: "Erro ao se comunicar ao banco de dados.\nTente novamente mais tarde.",
+            showConfirmButton: true,
+          });
+        }
+      };
+
+      await handleSubmitForgetPassword(email)
+
+      // 'email' contém o valor digitado pelo usuário
+      Swal.fire("Ótimo!", `E-mail encaminhado para ${email}.`, "success");
     }
   };
 
-  // Se estiver carregando a autenticação, mostra mensagem
-  if (loading) {
-    return (
-      <Container>
-        <div style={{ textAlign: 'center' }}>Carregando...</div>
-      </Container>
-    );
-  }
+
 
   return (
     <Container>
@@ -181,10 +152,7 @@ function Login() {
           />
 
           <ButtonMui
-            onClick={(e) => {
-              e.preventDefault();
-              handleForgetPasswordSwal();
-            }}
+            onClick={() => handleForgetPasswordSwal()} //setOpenModal(true)}
             name={"Esqueci minha senha"}
             variant="text"
           />
@@ -192,11 +160,20 @@ function Login() {
           <ButtonMui
             name={"ENTRAR"}
             type="submit"
-            disabled={isSubmitting}
-            isLoading={isSubmitting}
+            disabled={loading}
+            isLoading={loading}
           />
+
+          {/* <ButtonMui
+            name={"CADASTRAR"}
+            variant="outlined"
+            onClick={() => navigate('/signUp')}
+            disabled={loading}
+          /> */}
+
         </BoxMiddle>
       </BoxLogin>
+
     </Container>
   );
 }

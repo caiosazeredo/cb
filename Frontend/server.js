@@ -15,7 +15,7 @@ const app = express();
 
 app.use("/", express.static(resolve(__dirname, "dist")));
 
-app.listen(process.env.PORT || 3001, (err) => {
+app.listen(process.env.PORT || 3000, (err) => {
   if (err) {
     console.log(err);
   }
