@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef } from 'react';
 import { 
   Box, 
   TextField, 
@@ -7,14 +7,9 @@ import {
   TableHead, 
   TableRow, 
   TableCell, 
-  TableBody,
-  Select,
-  MenuItem,
-  Typography,
-  FormControl
+  TableBody 
 } from '@mui/material';
 import Swal from 'sweetalert2';
-import Api from "../../helpers/Api";
 
 const FormularioMovimentacaoEmLinhas = ({
   tempMovements,
@@ -22,94 +17,22 @@ const FormularioMovimentacaoEmLinhas = ({
   onSaveAll,
   paymentMethods
 }) => {
-  const [expenseCategories, setExpenseCategories] = useState([]);
-  const api = Api();
-  
-  // Refs for form fields to enable keyboard navigation
+  // Refs para o campo Descrição (descRefs) e para o campo Valor (valorRefs)
   const descRefs = useRef([]);
   const valorRefs = useRef([]);
 
-  // Fetch expense categories when component mounts
-  useEffect(() => {
-    const fetchExpenseCategories = async () => {
-      try {
-        // In a real implementation, this would be an API call to get categories from Firebase
-        // This is a placeholder for demo purposes
-        const response = await api.getExpenseCategories();
-        if (response && response.success) {
-          setExpenseCategories(response.data);
-        } else {
-          // Fallback to hardcoded categories if API call fails
-          setExpenseCategories([
-            { id: 'aluguel', name: 'Aluguel do ponto comercial' },
-            { id: 'salarios', name: 'Salários e encargos trabalhistas' },
-            { id: 'energia', name: 'Conta de energia elétrica' },
-            { id: 'agua', name: 'Conta de água e esgoto' },
-            { id: 'internet', name: 'Internet e telefone' },
-            { id: 'erp', name: 'Sistemas de gestão (ERP)' },
-            { id: 'taxasPos', name: 'Taxas de máquinas de cartão (POS)' },
-            { id: 'contabilidade', name: 'Contabilidade / Escritório de contabilidade' },
-            { id: 'seguros', name: 'Seguros' },
-            { id: 'associacoes', name: 'Mensalidades de associações ou sindicatos' },
-            { id: 'estoque', name: 'Reposição de estoque / compras com fornecedores' },
-            { id: 'impostos', name: 'Impostos sobre vendas' },
-            { id: 'frete', name: 'Frete / transporte' },
-            { id: 'manutencao', name: 'Manutenção e limpeza' },
-            { id: 'marketing', name: 'Marketing e publicidade' },
-            { id: 'embalagens', name: 'Embalagens' },
-            { id: 'despesasBancarias', name: 'Despesas bancárias' }
-          ]);
-        }
-      } catch (error) {
-        console.error("Error fetching expense categories:", error);
-        // Fallback to hardcoded categories in case of error
-        setExpenseCategories([
-          { id: 'aluguel', name: 'Aluguel do ponto comercial' },
-          { id: 'salarios', name: 'Salários e encargos trabalhistas' },
-          { id: 'energia', name: 'Conta de energia elétrica' },
-          { id: 'agua', name: 'Conta de água e esgoto' },
-          { id: 'internet', name: 'Internet e telefone' },
-          { id: 'erp', name: 'Sistemas de gestão (ERP)' },
-          { id: 'taxasPos', name: 'Taxas de máquinas de cartão (POS)' },
-          { id: 'contabilidade', name: 'Contabilidade / Escritório de contabilidade' },
-          { id: 'seguros', name: 'Seguros' },
-          { id: 'associacoes', name: 'Mensalidades de associações ou sindicatos' },
-          { id: 'estoque', name: 'Reposição de estoque / compras com fornecedores' },
-          { id: 'impostos', name: 'Impostos sobre vendas' },
-          { id: 'frete', name: 'Frete / transporte' },
-          { id: 'manutencao', name: 'Manutenção e limpeza' },
-          { id: 'marketing', name: 'Marketing e publicidade' },
-          { id: 'embalagens', name: 'Embalagens' },
-          { id: 'despesasBancarias', name: 'Despesas bancárias' }
-        ]);
-      }
-    };
-
-    fetchExpenseCategories();
-  }, []);
-
-  // Check if there's at least one cash payment line
+  // Verifica se existe ao menos uma linha em que .forma === 'dinheiro' (para exibir cols de moedas)
   const hasDinheiro = tempMovements.some((mov) => mov.forma === 'dinheiro');
 
-  // Group payment methods by category for better organization
-  const groupedPaymentMethods = {
-    debito: paymentMethods.filter(method => method.id.includes('debito') || method.category === 'debito'),
-    credito: paymentMethods.filter(method => method.id.includes('credito') || method.category === 'credito'),
-    pix: paymentMethods.filter(method => method.id.includes('pix') || method.category === 'pix'),
-    ticket: paymentMethods.filter(method => method.id.includes('ticket') || method.category === 'ticket'),
-    dinheiro: paymentMethods.filter(method => method.id === 'dinheiro')
-  };
-
-  // Returns an array with the names of missing fields for this line
+  // Retorna um array com os nomes dos campos que estão faltando nessa linha
   const getMissingFields = (mov) => {
     const missing = [];
     if (!mov.tipo) missing.push('Tipo');
-    if (mov.tipo === 'entrada' && !mov.forma) missing.push('Forma de Pagamento');
-    if (mov.tipo === 'saida' && !mov.expenseCategory) missing.push('Categoria de Despesa');
+    if (!mov.forma) missing.push('Forma de Pagamento');
     if (!mov.valor) missing.push('Valor');
     if (!mov.descricao) missing.push('Descrição');
     
-    // If it's cash payment, check for coin fields
+    // Se for 'dinheiro', podemos exigir moedasEntrada e moedasSaida
     if (mov.forma === 'dinheiro') {
       if (!mov.moedasEntrada) missing.push('Entrada de Moedas');
       if (!mov.moedasSaida) missing.push('Saída de Moedas');
@@ -117,14 +40,13 @@ const FormularioMovimentacaoEmLinhas = ({
     return missing;
   };
 
-  // Add a new line
+  // Adiciona uma nova linha
   const addNewLine = () => {
     const updated = [
       ...tempMovements,
       {
         tipo: 'entrada',
         forma: '',
-        expenseCategory: '',
         valor: '',
         descricao: '',
         paymentStatus: 'realizado',
@@ -135,33 +57,21 @@ const FormularioMovimentacaoEmLinhas = ({
     onTempMovementsChange(updated);
   };
 
-  // Remove a line (if there's more than one)
+  // Remove uma linha (se tiver mais de uma)
   const removeLine = (index) => {
-    if (tempMovements.length === 1) return; // don't remove if it's the only one
+    if (tempMovements.length === 1) return; // não remove se for a única
     const updated = tempMovements.filter((_, idx) => idx !== index);
     onTempMovementsChange(updated);
   };
 
-  // Update a field value for a specific line
+  // Atualiza o valor de um campo em uma linha específica
   const handleChange = (index, field, value) => {
     const updated = [...tempMovements];
-    
-    // If changing the movement type, reset payment form or expense category
-    if (field === 'tipo') {
-      updated[index] = {
-        ...updated[index],
-        [field]: value,
-        forma: '',
-        expenseCategory: ''
-      };
-    } else {
-      updated[index][field] = value;
-    }
-    
+    updated[index][field] = value;
     onTempMovementsChange(updated);
   };
 
-  // Save all items
+  // Salva todos os itens
   const handleSaveAll = () => {
     for (const [idx, mov] of tempMovements.entries()) {
       const missing = getMissingFields(mov);
@@ -183,9 +93,8 @@ const FormularioMovimentacaoEmLinhas = ({
         <TableHead>
           <TableRow>
             <TableCell>Tipo</TableCell>
-            <TableCell>Forma/Categoria</TableCell>
+            <TableCell>Forma Pagamento</TableCell>
 
-            {/* Show coin columns if there's at least one cash entry */}
             {hasDinheiro && (
               <>
                 <TableCell>Entrada de moedas</TableCell>
@@ -198,10 +107,11 @@ const FormularioMovimentacaoEmLinhas = ({
             <TableCell>Ações</TableCell>
           </TableRow>
         </TableHead>
+
         <TableBody>
           {tempMovements.map((mov, index) => (
             <TableRow key={index}>
-              {/* Movement Type (Income/Expense) */}
+              {/* Tipo (Entrada/Saída) */}
               <TableCell>
                 <TextField
                   select
@@ -216,98 +126,26 @@ const FormularioMovimentacaoEmLinhas = ({
                 </TextField>
               </TableCell>
 
-              {/* Payment Method (for income) or Expense Category (for expense) */}
+              {/* Forma de Pagamento (listando pm.name como label e pm.id como value) */}
               <TableCell>
-                {mov.tipo === 'entrada' ? (
-                  <FormControl fullWidth>
-                    <Select
-                      size="small"
-                      name="forma"
-                      value={mov.forma || ""}
-                      onChange={(e) => handleChange(index, 'forma', e.target.value)}
-                      displayEmpty
-                    >
-                      <MenuItem value="" disabled>Selecione</MenuItem>
-                      
-                      {/* Group payment methods by category */}
-                      {groupedPaymentMethods.dinheiro.length > 0 && (
-                        <MenuItem value="dinheiro">Dinheiro</MenuItem>
-                      )}
-
-                      {groupedPaymentMethods.debito.length > 0 && (
-                        [
-                          <MenuItem key="debito-header" disabled>
-                            <Typography variant="caption" fontWeight="bold">DÉBITO</Typography>
-                          </MenuItem>,
-                          ...groupedPaymentMethods.debito.map(method => (
-                            <MenuItem key={method.id} value={method.id}>
-                              {method.label || method.name}
-                            </MenuItem>
-                          ))
-                        ]
-                      )}
-
-                      {groupedPaymentMethods.credito.length > 0 && (
-                        [
-                          <MenuItem key="credito-header" disabled>
-                            <Typography variant="caption" fontWeight="bold">CRÉDITO</Typography>
-                          </MenuItem>,
-                          ...groupedPaymentMethods.credito.map(method => (
-                            <MenuItem key={method.id} value={method.id}>
-                              {method.label || method.name}
-                            </MenuItem>
-                          ))
-                        ]
-                      )}
-
-                      {groupedPaymentMethods.ticket.length > 0 && (
-                        [
-                          <MenuItem key="ticket-header" disabled>
-                            <Typography variant="caption" fontWeight="bold">TICKET</Typography>
-                          </MenuItem>,
-                          ...groupedPaymentMethods.ticket.map(method => (
-                            <MenuItem key={method.id} value={method.id}>
-                              {method.label || method.name}
-                            </MenuItem>
-                          ))
-                        ]
-                      )}
-
-                      {groupedPaymentMethods.pix.length > 0 && (
-                        [
-                          <MenuItem key="pix-header" disabled>
-                            <Typography variant="caption" fontWeight="bold">PIX</Typography>
-                          </MenuItem>,
-                          ...groupedPaymentMethods.pix.map(method => (
-                            <MenuItem key={method.id} value={method.id}>
-                              {method.label || method.name}
-                            </MenuItem>
-                          ))
-                        ]
-                      )}
-                    </Select>
-                  </FormControl>
-                ) : (
-                  <FormControl fullWidth>
-                    <Select
-                      size="small"
-                      name="expenseCategory"
-                      value={mov.expenseCategory || ""}
-                      onChange={(e) => handleChange(index, 'expenseCategory', e.target.value)}
-                      displayEmpty
-                    >
-                      <MenuItem value="" disabled>Selecione</MenuItem>
-                      {expenseCategories.map((category) => (
-                        <MenuItem key={category.id} value={category.id}>
-                          {category.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                )}
+                <TextField
+                  select
+                  name="forma"
+                  value={mov.forma}
+                  onChange={(e) => handleChange(index, 'forma', e.target.value)}
+                  SelectProps={{ native: true }}
+                  size="small"
+                >
+                  <option value="">Selecione</option>
+                  {paymentMethods.map((pm) => (
+                    <option key={pm.id} value={pm.id}>
+                      {pm.name}
+                    </option>
+                  ))}
+                </TextField>
               </TableCell>
 
-              {/* Only render the coin cells if hasDinheiro is true */}
+              {/* Entrada/Saída de moedas - só mostra se for 'dinheiro' */}
               {hasDinheiro && (
                 <>
                   <TableCell>
@@ -320,7 +158,6 @@ const FormularioMovimentacaoEmLinhas = ({
                         size="small"
                       />
                     ) : (
-                      // If not cash, show disabled field
                       <TextField
                         disabled
                         placeholder="-"
@@ -349,7 +186,7 @@ const FormularioMovimentacaoEmLinhas = ({
                 </>
               )}
 
-              {/* Value */}
+              {/* Valor */}
               <TableCell>
                 <TextField
                   inputRef={(el) => {
@@ -363,14 +200,14 @@ const FormularioMovimentacaoEmLinhas = ({
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
-                      // On Enter in Value field, focus the Description field in the same row
+                      // Ao pressionar Enter em Valor, focamos a Descrição da mesma linha
                       descRefs.current[index]?.focus();
                     }
                   }}
                 />
               </TableCell>
 
-              {/* Description (Enter -> jump to next row's Value) */}
+              {/* Descrição (Enter -> pula pro Valor da próxima linha) */}
               <TableCell>
                 <TextField
                   inputRef={(el) => {
@@ -383,27 +220,26 @@ const FormularioMovimentacaoEmLinhas = ({
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
-                      // Check if current row is valid
+                      // Verifica se linha atual está válida
                       const missing = getMissingFields(mov);
                       if (missing.length > 0) {
                         Swal.fire({
                           icon: 'warning',
                           title: 'Atenção',
-                          text: `Preencha os campos obrigatórios antes de adicionar nova linha.\nFaltando: ${missing.join(', ')}` 
+                          text: `Preencha os campos obrigatórios antes de adicionar nova linha.\nFaltando: ${missing.join(', ')}`
                         });
                         return;
                       }
 
-                      // Only create new row if this is the last one
+                      // Se estiver na última linha, cria nova
                       if (index === tempMovements.length - 1) {
                         addNewLine();
-                        // After creating, wait for new row to render
-                        // and focus the Value field of the new row
+                        // Aguarda a nova linha ser renderizada e foca o Valor dela
                         setTimeout(() => {
                           valorRefs.current[index + 1]?.focus();
                         }, 100);
                       } else {
-                        // If not the last row, focus the Value field of the next row
+                        // Se não for a última linha, foca o campo Valor da próxima linha
                         valorRefs.current[index + 1]?.focus();
                       }
                     }
@@ -411,7 +247,7 @@ const FormularioMovimentacaoEmLinhas = ({
                 />
               </TableCell>
 
-              {/* Remove row button */}
+              {/* Botão remover linha */}
               <TableCell>
                 <Button
                   variant="contained"
@@ -448,4 +284,4 @@ const FormularioMovimentacaoEmLinhas = ({
   );
 };
 
-export default FormularioMovimentacaoEmLinhas;    
+export default FormularioMovimentacaoEmLinhas;

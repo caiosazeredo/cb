@@ -386,7 +386,18 @@ const Api = () => {
       } catch (error) {
         return formatError(error);
       }
+    },
+
+    // ==================== MÉTODOS DE PAGAMENTO ====================
+    allPaymentMethods: async () => {
+      try {
+        const response = await api.get('/paymentMethods');
+        return formatResponse(response);
+      } catch (error) {
+        return formatError(error);
+      }
     }
+    
   };
 };
 

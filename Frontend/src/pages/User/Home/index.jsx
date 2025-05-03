@@ -22,7 +22,7 @@ const Home = () => {
       setLoading(true);
       const response = await api.allUnits();
       if (response.success) {
-        const unidadesFormatadas = response.data
+        const allUnits = response.data
           .filter(unit => unit.ativo)
           .map(unit => ({
             id: unit.id,
@@ -30,7 +30,13 @@ const Home = () => {
             address: unit.endereco,
             telefone: unit.telefone,
             ativo: unit.ativo
-          }))
+          }));
+
+        // Filtra apenas as unidades que o usuário tem acesso
+        const selectedUnits = auth.user?.selectedUnits || [];
+
+        const unidadesFormatadas = allUnits
+          .filter(unit => selectedUnits.includes(unit.id))
           .sort((a, b) => a.name.localeCompare(b.name));
 
         setUnits(unidadesFormatadas);
@@ -60,9 +66,11 @@ const Home = () => {
     }
   };
 
+
   useEffect(() => {
     handleAllUnits();
   }, []);
+
 
   // Filtra as unidades com base no termo de busca
   const filteredUnits = units.filter(

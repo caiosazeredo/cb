@@ -13,7 +13,7 @@ import EmployeesEditAndRemove from "./pages/SuperUser/EmployeesEditAndRemove";
 import UnitsList from "./pages/SuperUser/UnitsList";
 import CreateUnit from "./pages/SuperUser/CreateUnit";
 import UnitEditAndRemove from "./pages/SuperUser/UnitEditAndRemove";
-import Reports from "./pages/SuperUser/Reports"; // Certifique-se de que este import está correto
+import Reports from "./pages/SuperUser/Reports"; 
 
 //usuario
 import Home from "./pages/User/Home";
@@ -40,7 +40,7 @@ export const AllRoutes = () => {
     "/createUnit",
     "/employeesEditAndRemove/:id",
     "/unitEditAndRemove/:id",
-    "/reports", // Certifique-se de que esta rota está incluída
+    "/reports", 
     "/userMenu"
   ];
 

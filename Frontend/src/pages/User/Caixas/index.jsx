@@ -106,8 +106,8 @@ const Caixas = () => {
 
   // Tratar erros de API
   const handleApiError = (errorMessage) => {
-    if (errorMessage.includes('Sessão expirada') || 
-        errorMessage.includes('Autenticação necessária')) {
+    if (errorMessage.includes('Sessão expirada') ||
+      errorMessage.includes('Autenticação necessária')) {
       Swal.fire({
         icon: 'warning',
         title: 'Sessão Expirada',
@@ -130,9 +130,9 @@ const Caixas = () => {
 
   // Voltar para a Home "/"
   const handleGoHome = () => {
-    if(auth.user && auth.user.superusuario){
+    if (auth.user && auth.user.superusuario) {
       navigate("/userMenu");
-    }else{
+    } else {
       navigate("/");
     }
   };
@@ -142,6 +142,22 @@ const Caixas = () => {
     if (!auth.user) {
       navigate('/login');
       return;
+    } else {
+      // Se não é superusuário, verificar se tem acesso à unidade
+      if (!auth.user.superusuario) {
+        const allowedUnits = auth.user.selectedUnits || [];
+        if (!allowedUnits.includes(unidadeId)) {
+          Swal.fire({
+            icon: "error",
+            title: "Acesso Negado",
+            text: "Você não tem permissão para acessar esta unidade.",
+            showConfirmButton: true
+          }).then(() => {
+            navigate("/");
+          });
+          return;
+        }
+      }
     }
 
     fetchUnidadeInfo();

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import {
   Radio,
   RadioGroup,
@@ -19,99 +19,45 @@ import {
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import PhotoCamera from "@mui/icons-material/PhotoCamera";
 import CloseIcon from "@mui/icons-material/Close";
-import Api from "../../helpers/Api";
 
+// Recebemos agora também allPaymentMethods
 const FormularioMovimentacao = ({
   newMovement,
   setNewMovement,
-  paymentMethods,
   onAddMovement,
-  loading
+  loading,
+  allPaymentMethods
 }) => {
+  // Estado local para a imagem selecionada (opcional)
   const [selectedImage, setSelectedImage] = useState(null);
-  const [expenseCategories, setExpenseCategories] = useState([]);
-  const api = Api();
 
-  // Fetch expense categories from Firebase on component mount
-  useEffect(() => {
-    const fetchExpenseCategories = async () => {
-      try {
-        // In a real implementation, this would be an API call to get categories from Firebase
-        // This is a placeholder for demo purposes
-        const response = await api.getExpenseCategories();
-        if (response && response.success) {
-          setExpenseCategories(response.data);
-        } else {
-          // Fallback to hardcoded categories if API call fails
-          setExpenseCategories([
-            { id: 'aluguel', name: 'Aluguel do ponto comercial' },
-            { id: 'salarios', name: 'Salários e encargos trabalhistas' },
-            { id: 'energia', name: 'Conta de energia elétrica' },
-            { id: 'agua', name: 'Conta de água e esgoto' },
-            { id: 'internet', name: 'Internet e telefone' },
-            { id: 'erp', name: 'Sistemas de gestão (ERP)' },
-            { id: 'taxasPos', name: 'Taxas de máquinas de cartão (POS)' },
-            { id: 'contabilidade', name: 'Contabilidade / Escritório de contabilidade' },
-            { id: 'seguros', name: 'Seguros' },
-            { id: 'associacoes', name: 'Mensalidades de associações ou sindicatos' },
-            { id: 'estoque', name: 'Reposição de estoque / compras com fornecedores' },
-            { id: 'impostos', name: 'Impostos sobre vendas' },
-            { id: 'frete', name: 'Frete / transporte' },
-            { id: 'manutencao', name: 'Manutenção e limpeza' },
-            { id: 'marketing', name: 'Marketing e publicidade' },
-            { id: 'embalagens', name: 'Embalagens' },
-            { id: 'despesasBancarias', name: 'Despesas bancárias' }
-          ]);
-        }
-      } catch (error) {
-        console.error("Error fetching expense categories:", error);
-        // Fallback to hardcoded categories in case of error
-        setExpenseCategories([
-          { id: 'aluguel', name: 'Aluguel do ponto comercial' },
-          { id: 'salarios', name: 'Salários e encargos trabalhistas' },
-          { id: 'energia', name: 'Conta de energia elétrica' },
-          { id: 'agua', name: 'Conta de água e esgoto' },
-          { id: 'internet', name: 'Internet e telefone' },
-          { id: 'erp', name: 'Sistemas de gestão (ERP)' },
-          { id: 'taxasPos', name: 'Taxas de máquinas de cartão (POS)' },
-          { id: 'contabilidade', name: 'Contabilidade / Escritório de contabilidade' },
-          { id: 'seguros', name: 'Seguros' },
-          { id: 'associacoes', name: 'Mensalidades de associações ou sindicatos' },
-          { id: 'estoque', name: 'Reposição de estoque / compras com fornecedores' },
-          { id: 'impostos', name: 'Impostos sobre vendas' },
-          { id: 'frete', name: 'Frete / transporte' },
-          { id: 'manutencao', name: 'Manutenção e limpeza' },
-          { id: 'marketing', name: 'Marketing e publicidade' },
-          { id: 'embalagens', name: 'Embalagens' },
-          { id: 'despesasBancarias', name: 'Despesas bancárias' }
-        ]);
-      }
-    };
+  // Categorias fixas que você quer exibir como "select" principal
+  const paymentCategories = [
+    { value: "dinheiro", label: "Dinheiro" },
+    { value: "credito", label: "Cartão de Crédito" },
+    { value: "debito", label: "Cartão de Débito" },
+    { value: "pix", label: "PIX" },
+    { value: "ticket", label: "Ticket" }
+  ];
 
-    fetchExpenseCategories();
-  }, []);
-
-  // Group payment methods by category for better organization
-  const groupedPaymentMethods = {
-    debito: paymentMethods.filter(method => method.id.includes('debito') || method.category === 'debito'),
-    credito: paymentMethods.filter(method => method.id.includes('credito') || method.category === 'credito'),
-    pix: paymentMethods.filter(method => method.id.includes('pix') || method.category === 'pix'),
-    ticket: paymentMethods.filter(method => method.id.includes('ticket') || method.category === 'ticket'),
-    dinheiro: paymentMethods.filter(method => method.id === 'dinheiro')
-  };
+  // Filtra da lista total somente os métodos que pertençam à categoria selecionada
+  const filteredMethods = useMemo(() => {
+    if (!newMovement.paymentCategory) return [];
+    return allPaymentMethods.filter(
+      (m) => m.category === newMovement.paymentCategory
+    );
+  }, [allPaymentMethods, newMovement.paymentCategory]);
 
   // Verifica se os campos obrigatórios estão preenchidos
   const isFormValid = () => {
-    // For entrada (income), payment method and amount are required
-    if (newMovement.type === 'entrada') {
-      return newMovement.paymentMethod && newMovement.amount;
-    }
-    // For saida (expense), expense category and amount are required
-    else {
-      return newMovement.expenseCategory && newMovement.amount;
-    }
+    if (!newMovement.paymentCategory) return false;
+    if (!newMovement.paymentMethodId) return false;
+    if (!newMovement.amount) return false;
+    if (newMovement.type === "entrada" && !newMovement.paymentStatus) return false;
+    return true;
   };
 
+  // Lida com a seleção do arquivo no input type="file"
   const handleImageChange = (event) => {
     if (event.target.files && event.target.files[0]) {
       setSelectedImage(event.target.files[0]);
@@ -119,12 +65,14 @@ const FormularioMovimentacao = ({
     }
   };
 
-  const handleRemoveImage = () => {
-    setSelectedImage(null);
-  };
-
+  // Quando clicar no botão "Adicionar Movimentação"
   const handleAddMovementClick = () => {
     onAddMovement(selectedImage);
+  };
+
+  // Remove a imagem do estado local
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
   };
 
   return (
@@ -139,7 +87,7 @@ const FormularioMovimentacao = ({
         border: "1px solid #e0e0e0"
       }}
     >
-      {/* Type of Movement: Income or Expense */}
+      {/* Tipo de Movimentação: Entrada ou Saída */}
       <FormControl>
         <FormLabel id="movement-type-label">Tipo de Movimentação</FormLabel>
         <RadioGroup
@@ -147,13 +95,7 @@ const FormularioMovimentacao = ({
           aria-labelledby="movement-type-label"
           value={newMovement.type}
           onChange={(e) =>
-            setNewMovement({
-              ...newMovement,
-              type: e.target.value,
-              // Clear the payment method or expense category when changing types
-              paymentMethod: '',
-              expenseCategory: ''
-            })
+            setNewMovement({ ...newMovement, type: e.target.value })
           }
         >
           <FormControlLabel value="entrada" control={<Radio />} label="Entrada" />
@@ -161,7 +103,7 @@ const FormularioMovimentacao = ({
         </RadioGroup>
       </FormControl>
 
-      {/* Status of Payment (only for income) */}
+      {/* Status de Pagamento (apenas para entradas) */}
       {newMovement.type === "entrada" && (
         <FormControl required error={!newMovement.paymentStatus}>
           <FormLabel id="payment-status-label">Status do Pagamento</FormLabel>
@@ -192,111 +134,59 @@ const FormularioMovimentacao = ({
 
       <Divider />
 
-      {/* Different inputs based on movement type (income or expense) */}
-      {newMovement.type === "entrada" ? (
-        /* Payment Method (for income) */
-        <FormControl fullWidth required error={!newMovement.paymentMethod}>
+      {/* Select principal - categoria (dinheiro, crédito, débito, pix, ticket) */}
+      <FormControl fullWidth required>
+        <FormLabel>Categoria de Pagamento</FormLabel>
+        <Select
+          value={newMovement.paymentCategory || ""}
+          onChange={(e) =>
+            setNewMovement({
+              ...newMovement,
+              paymentCategory: e.target.value,
+              paymentMethodId: "" // Limpa o método específico ao alterar a categoria
+            })
+          }
+          displayEmpty
+        >
+          <MenuItem value="" disabled>
+            Selecione a categoria
+          </MenuItem>
+          {paymentCategories.map((cat) => (
+            <MenuItem key={cat.value} value={cat.value}>
+              {cat.label}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+
+      {/* Select para exibir os métodos filtrados pela categoria */}
+      {newMovement.paymentCategory && (
+        <FormControl fullWidth required>
           <FormLabel>Forma de Pagamento</FormLabel>
           <Select
-            value={newMovement.paymentMethod || ""}
+            value={newMovement.paymentMethodId || ""}
             onChange={(e) =>
-              setNewMovement({ ...newMovement, paymentMethod: e.target.value })
+              setNewMovement({ ...newMovement, paymentMethodId: e.target.value })
             }
             displayEmpty
           >
             <MenuItem value="" disabled>
-              Selecione uma forma de pagamento
+              Selecione a forma exata
             </MenuItem>
-
-            {/* Group by payment method categories */}
-            {groupedPaymentMethods.dinheiro.length > 0 && (
-              <MenuItem value="dinheiro">Dinheiro</MenuItem>
-            )}
-
-            {groupedPaymentMethods.debito.length > 0 && (
-              [
-                <MenuItem key="debito-header" disabled>
-                  <Typography variant="caption" fontWeight="bold">DÉBITO</Typography>
-                </MenuItem>,
-                ...groupedPaymentMethods.debito.map(method => (
-                  <MenuItem key={method.id} value={method.id}>
-                    {method.label || method.name}
-                  </MenuItem>
-                ))
-              ]
-            )}
-
-            {groupedPaymentMethods.credito.length > 0 && (
-              [
-                <MenuItem key="credito-header" disabled>
-                  <Typography variant="caption" fontWeight="bold">CRÉDITO</Typography>
-                </MenuItem>,
-                ...groupedPaymentMethods.credito.map(method => (
-                  <MenuItem key={method.id} value={method.id}>
-                    {method.label || method.name}
-                  </MenuItem>
-                ))
-              ]
-            )}
-
-            {groupedPaymentMethods.ticket.length > 0 && (
-              [
-                <MenuItem key="ticket-header" disabled>
-                  <Typography variant="caption" fontWeight="bold">TICKET</Typography>
-                </MenuItem>,
-                ...groupedPaymentMethods.ticket.map(method => (
-                  <MenuItem key={method.id} value={method.id}>
-                    {method.label || method.name}
-                  </MenuItem>
-                ))
-              ]
-            )}
-
-            {groupedPaymentMethods.pix.length > 0 && (
-              [
-                <MenuItem key="pix-header" disabled>
-                  <Typography variant="caption" fontWeight="bold">PIX</Typography>
-                </MenuItem>,
-                ...groupedPaymentMethods.pix.map(method => (
-                  <MenuItem key={method.id} value={method.id}>
-                    {method.label || method.name}
-                  </MenuItem>
-                ))
-              ]
-            )}
-          </Select>
-          {!newMovement.paymentMethod && (
-            <FormHelperText>Forma de pagamento é obrigatória</FormHelperText>
-          )}
-        </FormControl>
-      ) : (
-        /* Expense Category (for expenses) */
-        <FormControl fullWidth required error={!newMovement.expenseCategory}>
-          <FormLabel>Categoria de Despesa</FormLabel>
-          <Select
-            value={newMovement.expenseCategory || ""}
-            onChange={(e) =>
-              setNewMovement({ ...newMovement, expenseCategory: e.target.value })
-            }
-            displayEmpty
-          >
-            <MenuItem value="" disabled>
-              Selecione uma categoria de despesa
-            </MenuItem>
-            {expenseCategories.map((category) => (
-              <MenuItem key={category.id} value={category.id}>
-                {category.name}
+            {filteredMethods.map((method) => (
+              <MenuItem key={method.id} value={method.id}>
+                {method.name}
               </MenuItem>
             ))}
           </Select>
-          {!newMovement.expenseCategory && (
-            <FormHelperText>Categoria de despesa é obrigatória</FormHelperText>
+          {!newMovement.paymentMethodId && (
+            <FormHelperText>Forma de pagamento é obrigatória</FormHelperText>
           )}
         </FormControl>
       )}
 
-      {/* Coin entry/exit fields only for cash payments */}
-      {newMovement.type === "entrada" && newMovement.paymentMethod === "dinheiro" && (
+      {/* Se for "dinheiro", exibe campos para entrada/saída de moedas */}
+      {newMovement.paymentCategory === "dinheiro" && (
         <>
           <FormControl fullWidth>
             <FormLabel>Entrada de moedas</FormLabel>
@@ -338,7 +228,7 @@ const FormularioMovimentacao = ({
         </>
       )}
 
-      {/* Value */}
+      {/* Campo Valor */}
       <FormControl fullWidth required error={!newMovement.amount}>
         <FormLabel>Valor</FormLabel>
         <TextField
@@ -361,7 +251,7 @@ const FormularioMovimentacao = ({
         )}
       </FormControl>
 
-      {/* Description */}
+      {/* Descrição */}
       <FormControl fullWidth>
         <FormLabel>Descrição</FormLabel>
         <TextField
@@ -375,43 +265,35 @@ const FormularioMovimentacao = ({
         />
       </FormControl>
 
-      {/* Additional fields for Ticket payment method */}
-      {newMovement.type === "entrada" && newMovement.paymentMethod && newMovement.paymentMethod.includes("ticket") && (
+      {/* Se for categoria "ticket", exibe Nome do Cliente e Documento */}
+      {newMovement.paymentCategory === "ticket" && (
         <>
-          <FormControl
-            fullWidth
-            required
-            error={!newMovement.clientName}
-          >
+          <FormControl fullWidth required>
             <FormLabel>Nome do Cliente</FormLabel>
             <TextField
               value={newMovement.clientName || ""}
               onChange={(e) =>
                 setNewMovement({ ...newMovement, clientName: e.target.value })
               }
-              placeholder="Nome do cliente"
+              placeholder="Nome do cliente (obrigatório para Ticket)"
             />
-            {!newMovement.clientName && (
-              <FormHelperText>
-                Nome do cliente é obrigatório para Ticket
-              </FormHelperText>
-            )}
           </FormControl>
 
           <FormControl fullWidth>
-            <FormLabel>Número do Documento</FormLabel>
+            <FormLabel>Número do Documento (opcional)</FormLabel>
             <TextField
               value={newMovement.documentNumber || ""}
               onChange={(e) =>
                 setNewMovement({ ...newMovement, documentNumber: e.target.value })
               }
-              placeholder="Número do documento (opcional)"
+              placeholder="Número do documento"
             />
           </FormControl>
         </>
       )}
 
-      {/* Image Upload */}
+      {/* Upload de imagem (opcional - ESTÁ FUNCIONANDO) */}
+      {/*
       <Box>
         <FormLabel>Adicionar imagem (opcional)</FormLabel>
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, mt: 1 }}>
@@ -428,7 +310,6 @@ const FormularioMovimentacao = ({
               onChange={handleImageChange}
             />
           </Button>
-
           {selectedImage && (
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <img
@@ -455,8 +336,9 @@ const FormularioMovimentacao = ({
           )}
         </Box>
       </Box>
+      */}
 
-      {/* Add Button */}
+      {/* Botão de "Adicionar Movimentação" */}
       <Button
         variant="contained"
         onClick={handleAddMovementClick}

@@ -17,12 +17,12 @@ import { useNavigate } from "react-router-dom";
 const HomeS = () => {
   const navigate = useNavigate();
   const menuOptions = [
-    { icon: DashboardIcon, text: "Dashboard", link: "/" },  
+    // { icon: DashboardIcon, text: "Dashboard", link: "/" },  
     { icon: PersonAddIcon, text: "Cadastrar Funcionário", link: "/userRegistration" },
     { icon: PeopleIcon, text: "Listar Funcionários", link: "/employeesList" },
     { icon: AddBusinessIcon, text: "Cadastrar Unidade", link: "/createUnit" },
     { icon: StorefrontIcon, text: "Listar Unidades", link: "/unitsList" },
-    { icon: AssessmentIcon, text: "Relatórios", link: "/reports" },
+    { icon: AssessmentIcon, text: "Relatórios e Dashboard", link: "/reports" },
     { icon: ContactPageIcon, text: "Página do Funcionário", link: "/userMenu" },
     /* { icon: HistoryIcon, text: "Histórico de Acesso", link: "/" },
     { icon: HistoryIcon, text: "Histórico de Atividades", link: "/" },

@@ -22,7 +22,7 @@ const EmployeesEditAndRemove = () => {
   const [cpf, setCpf] = useState("");
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState("");
-  const [isSuperUser, setIsSuperUser] = useState(false);
+  const [superusuario, setSuperusuario] = useState(false);
   const [selectedUnits, setSelectedUnits] = useState([]);
   const [ativo, setAtivo] = useState(false);
 
@@ -41,7 +41,7 @@ const EmployeesEditAndRemove = () => {
 
   // Confirma ao tornar usuário superusuário
   const handleSuperUserChange = () => {
-    if (!isSuperUser) {
+    if (!superusuario) {
       Swal.fire({
         icon: "warning",
         title: "Atenção!",
@@ -51,11 +51,11 @@ const EmployeesEditAndRemove = () => {
         cancelButtonText: "Não",
       }).then((result) => {
         if (result.isConfirmed) {
-          setIsSuperUser(true);
+          setSuperusuario(true);
         }
       });
     } else {
-      setIsSuperUser(false);
+      setSuperusuario(false);
     }
   };
 
@@ -106,7 +106,7 @@ const EmployeesEditAndRemove = () => {
         setCpf(data.cpf || "");
         setPhone(data.phone || "");
         setRole(data.role || "");
-        setIsSuperUser(data.superusuario || false);
+        setSuperusuario(data.superusuario || false);
         setSelectedUnits(data.selectedUnits || []);
         setAtivo(data.ativo || false);
       } else {
@@ -175,7 +175,7 @@ const EmployeesEditAndRemove = () => {
       Swal.fire({ icon: "warning", title: "Telefone inválido!", text: "Preencha o telefone corretamente." });
       return;
     }
-    if (!isSuperUser && selectedUnits.length === 0) {
+    if (!superusuario && selectedUnits.length === 0) {
       Swal.fire({
         icon: "warning",
         title: "Seleção de Unidade Obrigatória!",
@@ -192,7 +192,7 @@ const EmployeesEditAndRemove = () => {
         cpf,
         phone,
         role,
-        isSuperUser,
+        superusuario,
         selectedUnits,
         ativo
       };
@@ -330,7 +330,7 @@ const EmployeesEditAndRemove = () => {
         <FilterContainer className="fullWidth adminLabel">
           <FormControlLabel
             className="fullWidth adminLabel"
-            control={<Switch checked={isSuperUser} onChange={handleSuperUserChange} />}
+            control={<Switch checked={superusuario} onChange={handleSuperUserChange} />}
             label="Administrador"
           />
           <FormControlLabel

@@ -40,18 +40,18 @@ const Reports = () => {
     { id: "salesByUnit", label: "Vendas por Unidade", description: "Comparativo de vendas entre unidades" },
     { id: "dailySales", label: "Vendas Diárias", description: "Evolução das vendas ao longo do período" },
     { id: "ticketAverage", label: "Ticket Médio", description: "Valor médio por transação" },
-    { id: "pendingPayments", label: "Pagamentos Pendentes", description: "Lista de valores a receber" },
-    { id: "topProducts", label: "Produtos Mais Vendidos", description: "Ranking dos produtos com maior volume de vendas" },
-    { id: "userPerformance", label: "Desempenho de Funcionários", description: "Análise de vendas por funcionário" },
+    // { id: "pendingPayments", label: "Pagamentos Pendentes", description: "Lista de valores a receber" },
+    // { id: "topProducts", label: "Produtos Mais Vendidos", description: "Ranking dos produtos com maior volume de vendas" },
+    // { id: "userPerformance", label: "Desempenho de Funcionários", description: "Análise de vendas por funcionário" },
     { id: "cashFlow", label: "Fluxo de Caixa", description: "Movimentações detalhadas de entradas e saídas" },
-    { id: "expensesByCategory", label: "Despesas por Categoria", description: "Distribuição de gastos por categoria" },
-    { id: "salesByHour", label: "Vendas por Hora", description: "Análise de horários de pico de vendas" },
-    { id: "salesByDay", label: "Vendas por Dia da Semana", description: "Comparativo de desempenho por dia da semana" },
-    { id: "profitMargin", label: "Margem de Lucro", description: "Análise de lucro em relação às vendas" },
-    { id: "taxesSummary", label: "Resumo de Impostos", description: "Detalhamento de impostos por período" },
-    { id: "unitComparison", label: "Comparativo entre Unidades", description: "Análise comparativa entre unidades por diversos indicadores" },
-    { id: "systemLogs", label: "Logs do Sistema", description: "Registro de atividades no sistema" },
-    { id: "loginHistory", label: "Histórico de Login", description: "Registro de acessos ao sistema" }
+    // { id: "expensesByCategory", label: "Despesas por Categoria", description: "Distribuição de gastos por categoria" },
+    // { id: "salesByHour", label: "Vendas por Hora", description: "Análise de horários de pico de vendas" },
+    // { id: "salesByDay", label: "Vendas por Dia da Semana", description: "Comparativo de desempenho por dia da semana" },
+    // { id: "profitMargin", label: "Margem de Lucro", description: "Análise de lucro em relação às vendas" },
+    // { id: "taxesSummary", label: "Resumo de Impostos", description: "Detalhamento de impostos por período" },
+    // { id: "unitComparison", label: "Comparativo entre Unidades", description: "Análise comparativa entre unidades por diversos indicadores" },
+    // { id: "systemLogs", label: "Logs do Sistema", description: "Registro de atividades no sistema" },
+    // { id: "loginHistory", label: "Histórico de Login", description: "Registro de acessos ao sistema" }
   ];
   
   // Generate report based on filters

@@ -1,9 +1,25 @@
 import { Paper, Typography, Box, Divider, CircularProgress, Tooltip } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 
-const ResumoMovimentacao = ({ movements, paymentMethods, loading }) => {
+const ResumoMovimentacao = ({ movements, paymentMethods = [], loading }) => {
+
+  const fix2 = (n) => Number((n ?? 0).toFixed(2));
+
+  const categoryLabels = {
+    dinheiro: 'Dinheiro',
+    credito: 'Crédito',
+    debito: 'Débito',
+    pix: 'PIX',
+    ticket: 'Ticket'
+  };
+
+  const categories = ['dinheiro', 'credito', 'debito', 'pix', 'ticket'];
+
+  /* ================================================================
+     CÁLCULO DOS TOTAIS
+     ================================================================ */
   const calculateTotals = () => {
-    const totals = {
+    const t = {
       dinheiro: 0,
       credito: 0,
       debito: 0,
@@ -12,7 +28,6 @@ const ResumoMovimentacao = ({ movements, paymentMethods, loading }) => {
       total: 0,
       coinsIn: 0,
       coinsOut: 0,
-
       pendente: {
         dinheiro: 0,
         credito: 0,
@@ -25,208 +40,159 @@ const ResumoMovimentacao = ({ movements, paymentMethods, loading }) => {
       }
     };
 
-    if (!movements || movements.length === 0) {
-      return totals;
-    }
+    if (!movements?.length) return t;
 
-    movements.forEach(movement => {
-      const valor = Number(movement.valor || 0);
-      const isPendente = movement.paymentStatus === 'pendente';
-      const multiplier = movement.tipo === 'entrada' ? 1 : -1;
-      const valorAjustado = valor * multiplier;
+    movements.forEach((mov) => {
+      const valor       = Number(mov.valor) || 0;
+      const isPendente  = mov.paymentStatus === 'pendente';
+      const multiplier  = mov.tipo === 'entrada' ? 1 : -1;
+      const ajustado    = valor * multiplier;
 
-      // Verifica se é DINHEIRO, para somar as moedas:
-      const isDinheiro = movement.forma === 'dinheiro';
-      const moedasEntrada = Number(movement.moedasEntrada || 0);
-      const moedasSaida = Number(movement.moedasSaida || 0);
+      const method      = paymentMethods.find((m) => m.id === mov.forma);
+      if (!method) return;
 
-      // Se for pendente + entrada, soma em totals.pendente
-      if (isPendente && movement.tipo === 'entrada') {
-        totals.pendente[movement.forma] += valor;
-        totals.pendente.total += valor;
+      const cat         = method.category;
+      const isCash      = cat === 'dinheiro';
 
-        // Se for dinheiro pendente, soma as moedas pendentes
-        if (isDinheiro) {
-          totals.pendente.coinsIn += moedasEntrada;
-          totals.pendente.coinsOut += moedasSaida;
+      if (isPendente && mov.tipo === 'entrada') {
+        t.pendente[cat]      += valor;
+        t.pendente.total     += valor;
+        if (isCash) {
+          t.pendente.coinsIn  += Number(mov.moedasEntrada || 0);
+          t.pendente.coinsOut += Number(mov.moedasSaida   || 0);
         }
       } else {
-        // Caso contrário, soma nos valores já recebidos
-        totals[movement.forma] += valorAjustado;
-        totals.total += valorAjustado;
-
-        // Se for dinheiro "já realizado" (ou saída pendente, se tiver),
-        // soma nas moedas "confirmadas"
-        if (isDinheiro) {
-          // Repare que se for 'entrada', consideramos coinsIn; 
-          // se for 'saida', consideramos coinsOut. Mas neste exemplo
-          // adicionamos sempre os dois para manter a mesma lógica do que já existia.
-          totals.coinsIn += moedasEntrada;
-          totals.coinsOut += moedasSaida;
+        t[cat]          += ajustado;
+        t.total         += ajustado;
+        if (isCash) {
+          t.coinsIn     += Number(mov.moedasEntrada || 0);
+          t.coinsOut    += Number(mov.moedasSaida   || 0);
         }
       }
     });
 
-    return totals;
+    [...categories, 'total', 'coinsIn', 'coinsOut'].forEach((k) => {
+      t[k] = fix2(t[k]);
+    });
+    [...categories, 'total', 'coinsIn', 'coinsOut'].forEach((k) => {
+      t.pendente[k] = fix2(t.pendente[k]);
+    });
+
+    return t;
   };
 
   const totals = calculateTotals();
 
   if (loading) {
     return (
-      <Paper
-        sx={{
-          p: 2,
-          bgcolor: '#f9fafb',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100%',
-          minHeight: 300
-        }}
-      >
-        <CircularProgress size={40} />
+      <Paper sx={{ p: 2, bgcolor: '#f9fafb', display: 'flex', justifyContent: 'center',
+                   alignItems: 'center', height: '100%', minHeight: 300 }}>
+        <CircularProgress size={24} />
       </Paper>
     );
   }
 
   return (
-    <Paper
-      sx={{
-        p: 2,
-        bgcolor: '#f9fafb',
-        width: { xs: '100%', md: 400 },
-        maxWidth: '100%',
-        maxHeight: 600
-      }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h6" gutterBottom>
+    <Paper sx={{ p: 2, bgcolor: '#f9fafb', width: { xs: '100%', md: 400 },
+                 maxWidth: '100%', maxHeight: 650, overflowY: 'auto' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+        <Typography variant="h6" sx={{ fontSize: '1rem' }} gutterBottom>
           Resumo do Dia
         </Typography>
         <Tooltip title="Valores positivos indicam entradas no caixa. Valores negativos indicam saídas.">
-          <InfoIcon sx={{ ml: 1, fontSize: 18, color: 'info.main' }} />
+          <InfoIcon sx={{ ml: 1, fontSize: 16, color: 'info.main' }} />
         </Tooltip>
       </Box>
 
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-          Valores no Caixa:
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+        <Typography variant="subtitle2" sx={{ fontSize: '0.75rem', color: 'text.secondary' }} gutterBottom>
+          Valores por Categoria:
         </Typography>
-        {paymentMethods.map((method) => (
-          <Box
-            key={method.id}
-            sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-          >
-            <Typography>{method.label}:</Typography>
-            <Typography
-              fontWeight="medium"
-              sx={{ color: totals[method.id] >= 0 ? 'success.main' : 'error.main' }}
-            >
-              R$ {totals[method.id].toFixed(2)}
+
+        {categories.map((cat) => (
+          <Box key={cat} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+              {categoryLabels[cat]}:
+            </Typography>
+            <Typography variant="body2" sx={{
+              fontSize: '0.875rem',
+              fontWeight: 500,
+              color: totals[cat] >= 0 ? 'success.main' : 'error.main'
+            }}>
+              R$ {totals[cat].toFixed(2)}
             </Typography>
           </Box>
         ))}
 
         <Divider sx={{ my: 1 }} />
 
-        {/* Exibe moedas recebidas caso haja alguma */}
         {(totals.coinsIn > 0 || totals.coinsOut > 0) && (
           <>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+            <Typography variant="subtitle2" sx={{ fontSize: '0.75rem', color: 'text.secondary' }} gutterBottom>
               Moedas Recebidas
             </Typography>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}
-            >
-              <Typography>Entrada de moedas:</Typography>
-              <Typography fontWeight="medium" sx={{ color: 'success.main' }}>{totals.coinsIn}</Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>Entrada de moedas:</Typography>
+              <Typography variant="body2" sx={{ fontSize: '0.875rem', fontWeight: 500, color: 'success.main' }}>
+                {totals.coinsIn.toFixed(2)}
+              </Typography>
             </Box>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}
-            >
-              <Typography>Saída de moedas:</Typography>
-              <Typography fontWeight="medium" sx={{ color: 'error.main' }}>{totals.coinsOut}</Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>Saída de moedas:</Typography>
+              <Typography variant="body2" sx={{ fontSize: '0.875rem', fontWeight: 500, color: 'error.main' }}>
+                {totals.coinsOut.toFixed(2)}
+              </Typography>
             </Box>
+
             <Divider sx={{ my: 1 }} />
           </>
         )}
 
-        {/* Mostra valores pendentes, caso existam */}
+        {/* ------------- valores pendentes ------------- */}
         {totals.pendente.total > 0 && (
           <>
-            <Typography variant="subtitle2" color="warning.main" gutterBottom>
+            <Typography variant="subtitle2" sx={{ fontSize: '0.75rem', color: 'warning.main' }} gutterBottom>
               Valores Pendentes de Recebimento:
             </Typography>
-            {paymentMethods.map((method) => (
-              totals.pendente[method.id] > 0 && (
-                <Box
-                  key={`pendente-${method.id}`}
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}
-                >
-                  <Typography color="text.secondary">{method.label}:</Typography>
-                  <Typography fontWeight="medium" sx={{ color: 'warning.main' }}>
-                    R$ {totals.pendente[method.id].toFixed(2)}
+            {categories.map((cat) =>
+              totals.pendente[cat] > 0 && (
+                <Box key={`pend-${cat}`} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body2" sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
+                    {categoryLabels[cat]}:
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontSize: '0.875rem', fontWeight: 500, color: 'warning.main' }}>
+                    R$ {totals.pendente[cat].toFixed(2)}
                   </Typography>
                 </Box>
               )
-            ))}
+            )}
 
-            {/* Se houver moedas pendentes */}
             {(totals.pendente.coinsIn > 0 || totals.pendente.coinsOut > 0) && (
               <>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    mt: 1
-                  }}
-                >
-                  <Typography color="text.secondary">Entrada de moedas pendentes:</Typography>
-                  <Typography fontWeight="medium" sx={{ color: 'warning.main' }}>
-                    {totals.pendente.coinsIn}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 0.5 }}>
+                  <Typography variant="body2" sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
+                    Entrada de moedas pendentes:
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontSize: '0.875rem', fontWeight: 500, color: 'warning.main' }}>
+                    {totals.pendente.coinsIn.toFixed(2)}
                   </Typography>
                 </Box>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}
-                >
-                  <Typography color="text.secondary">Saída de moedas pendentes:</Typography>
-                  <Typography fontWeight="medium" sx={{ color: 'warning.main' }}>
-                    {totals.pendente.coinsOut}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body2" sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
+                    Saída de moedas pendentes:
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontSize: '0.875rem', fontWeight: 500, color: 'warning.main' }}>
+                    {totals.pendente.coinsOut.toFixed(2)}
                   </Typography>
                 </Box>
               </>
             )}
 
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                mt: 1
-              }}
-            >
-              <Typography fontWeight="medium" color="warning.main">
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+              <Typography variant="body2" sx={{ fontSize: '0.875rem', fontWeight: 500, color: 'warning.main' }}>
                 Total Pendente:
               </Typography>
-              <Typography fontWeight="medium" sx={{ color: 'warning.main' }}>
+              <Typography variant="body2" sx={{ fontSize: '0.875rem', fontWeight: 500, color: 'warning.main' }}>
                 R$ {totals.pendente.total.toFixed(2)}
               </Typography>
             </Box>
@@ -235,15 +201,14 @@ const ResumoMovimentacao = ({ movements, paymentMethods, loading }) => {
           </>
         )}
 
-        <Box
-          sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1 }}
-        >
-          <Typography fontWeight="bold">Total Geral:</Typography>
-          <Typography
-            fontWeight="bold"
-            variant="h6"
-            sx={{ color: totals.total >= 0 ? 'success.main' : 'error.main' }}
-          >
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1 }}>
+          <Typography variant="body2" sx={{ fontSize: '0.875rem', fontWeight: 'bold' }}>
+            Total Geral:
+          </Typography>
+          <Typography variant="body1" sx={{
+            fontSize: '1rem', fontWeight: 'bold',
+            color: totals.total >= 0 ? 'success.main' : 'error.main'
+          }}>
             R$ {totals.total.toFixed(2)}
           </Typography>
         </Box>

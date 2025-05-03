@@ -102,7 +102,7 @@ const EmployeesList = () => {
               color="warning"
             />
           }
-          label="Mostrar apenas superusuários"
+          label="Exibir apenas super usuários"
         />
         <FormControlLabel
           control={
@@ -112,7 +112,7 @@ const EmployeesList = () => {
               color="warning"
             />
           }
-          label="Mostrar apenas uauários ativos"
+          label="Exibir apenas usuários ativos"
         />
       </FilterContainer>
 

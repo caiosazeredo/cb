@@ -15,17 +15,15 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import ptBR from "date-fns/locale/pt-BR";
+import { format, startOfDay } from 'date-fns';
+
 
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
-import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
-import TableChartIcon from "@mui/icons-material/TableChart";
-
 import Swal from "sweetalert2";
 
 import Api from "../../../helpers/Api";
 import AuthContext from "../../../helpers/AuthContext";
 
-// Seus componentes
 import FormularioMovimentacao from "../../../components/FormularioMovimentacao";
 import HistoricoMovimentacao from "../../../components/HistoricoMovimentacao";
 import ResumoMovimentacao from "../../../components/ResumoMovimentacao";
@@ -50,10 +48,11 @@ const Movimentacao = () => {
   const [caixaInfo, setCaixaInfo] = useState(null);
   const [unidadeInfo, setUnidadeInfo] = useState(null);
 
-  // Estado para novo movimento
+  // Estado para novo movimento (movimentação individual)
   const [newMovement, setNewMovement] = useState({
     type: "entrada",
-    paymentMethod: "",
+    paymentCategory: "",
+    paymentMethodId: "",
     amount: "",
     description: "",
     clientName: "",
@@ -63,7 +62,7 @@ const Movimentacao = () => {
     moedasSaida: ""
   });
 
-  // Estado para várias movimentações (lote)
+  // Estado para múltiplas movimentações (lote)
   const [tempMovements, setTempMovements] = useState([
     {
       tipo: "entrada",
@@ -76,18 +75,12 @@ const Movimentacao = () => {
     }
   ]);
 
-  // Métodos de pagamento disponíveis
-  const paymentMethods = [
-    { id: "dinheiro", label: "Dinheiro" },
-    { id: "credito", label: "Cartão de Crédito" },
-    { id: "debito", label: "Cartão de Débito" },
-    { id: "pix", label: "PIX" },
-    { id: "ticket", label: "Ticket" }
-  ];
+  // Lista de todos os métodos de pagamento vindos da API
+  const [allPaymentMethods, setAllPaymentMethods] = useState([]);
 
-  // -----------------------------
-  // BUSCAR DADOS (Caixa, Unidade)
-  // -----------------------------
+  // ---------------------------------------------
+  // Funções de busca de dados (Caixa, Unidade, Movimentações)
+  // ---------------------------------------------
   const fetchCaixaInfo = async () => {
     try {
       const response = await api.getCaixa(unidadeId, caixaId);
@@ -114,15 +107,13 @@ const Movimentacao = () => {
     }
   };
 
-  // -----------------------------
-  // BUSCAR MOVIMENTAÇÕES
-  // -----------------------------
   const fetchMovements = async (date) => {
     try {
       setLoading(true);
       setError(null);
 
-      const formattedDate = date.toISOString().split("T")[0];
+      //const formattedDate = date.toISOString().split("T")[0];
+      const formattedDate = format(date, 'yyyy-MM-dd');
       const response = await api.getMovements(unidadeId, caixaId, formattedDate);
 
       if (response.success) {
@@ -168,9 +159,29 @@ const Movimentacao = () => {
     }
   };
 
-  // -----------------------------
+  // Busca os métodos de pagamento via rota /formasPagamento (ajuste conforme sua API)
+  const loadPaymentMethods = async () => {
+    try {
+      const resp = await api.allPaymentMethods();
+      if (resp.success) {
+        setAllPaymentMethods(resp.data || []);
+        console.log("setAllPaymentMethods: ", resp.data)
+      } else {
+        console.error("Erro ao buscar lista de pagamentos:", resp.error);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar lista de pagamentos:", error);
+    }
+  };
+
+  const toMidnightUTCISO = (date) => {
+    const d = startOfDay(date);
+    return d.toISOString();
+  };
+
+  // ---------------------------------------------
   // Converter arquivo em Base64
-  // -----------------------------
+  // ---------------------------------------------
   async function convertToBase64(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -180,17 +191,36 @@ const Movimentacao = () => {
     });
   }
 
-  // -----------------------------
-  // AÇÕES: ADD, SAVE LOTE, DELETE
-  // -----------------------------
-  // Adicionar nova movimentação (form único)
+  // ---------------------------------------------
+  // Ações: ADD, SAVE (lote), DELETE
+  // ---------------------------------------------
   const handleAddMovement = async (imageFile) => {
-    // Validação de campos obrigatórios
-    if (!newMovement.paymentMethod || !newMovement.amount) {
+    // Validações básicas
+    if (!newMovement.paymentCategory) {
       Swal.fire({
         icon: "warning",
-        title: "Campos obrigatórios",
-        text: "Forma de pagamento e valor são obrigatórios",
+        title: "Atenção",
+        text: "Você precisa escolher a categoria de pagamento.",
+        showConfirmButton: true
+      });
+      return;
+    }
+
+    if (!newMovement.paymentMethodId) {
+      Swal.fire({
+        icon: "warning",
+        title: "Atenção",
+        text: "Escolha a forma exata de pagamento.",
+        showConfirmButton: true
+      });
+      return;
+    }
+
+    if (!newMovement.amount) {
+      Swal.fire({
+        icon: "warning",
+        title: "Campo obrigatório",
+        text: "O valor da movimentação é obrigatório.",
         showConfirmButton: true
       });
       return;
@@ -200,7 +230,7 @@ const Movimentacao = () => {
       Swal.fire({
         icon: "warning",
         title: "Campo obrigatório",
-        text: "Status do pagamento é obrigatório",
+        text: "Status do pagamento é obrigatório para entradas.",
         showConfirmButton: true
       });
       return;
@@ -209,30 +239,33 @@ const Movimentacao = () => {
     try {
       setLoadingAction(true);
 
-      // Montamos o objeto que será salvo
+      // Montamos o objeto para salvar na API
       const movementData = {
         tipo: newMovement.type,
-        forma: newMovement.paymentMethod,
+        forma: newMovement.paymentMethodId,
         valor: parseFloat(newMovement.amount.replace(",", ".")),
         descricao: newMovement.description || "",
         nomeCliente: newMovement.clientName || "",
         numeroDocumento: newMovement.documentNumber || "",
-        data: selectedDate.toISOString(),
+        //data: selectedDate.toISOString(),
+        //data: format(selectedDate, "yyyy-MM-dd'T'HH:mm:ssxxx"),
+        //data: format(selectedDate, "yyyy-MM-dd"),
+        data: toMidnightUTCISO(selectedDate),
         paymentStatus:
           newMovement.type === "entrada" ? newMovement.paymentStatus : "realizado",
         moedasEntrada:
-          newMovement.paymentMethod === "dinheiro"
+          newMovement.paymentCategory === "dinheiro"
             ? newMovement.moedasEntrada
             : "",
         moedasSaida:
-          newMovement.paymentMethod === "dinheiro"
+          newMovement.paymentCategory === "dinheiro"
             ? newMovement.moedasSaida
             : ""
       };
 
       if (imageFile) {
         const base64Image = await convertToBase64(imageFile);
-        movementData.comprovante = base64Image; 
+        movementData.comprovante = base64Image;
       }
 
       const response = await api.createMovement(unidadeId, caixaId, movementData);
@@ -245,12 +278,14 @@ const Movimentacao = () => {
           timer: 1500
         });
 
+        // Recarrega as movimentações
         fetchMovements(selectedDate);
 
-        // Limpar formulário
+        // Limpa o formulário
         setNewMovement({
           type: "entrada",
-          paymentMethod: "",
+          paymentCategory: "",
+          paymentMethodId: "",
           amount: "",
           description: "",
           clientName: "",
@@ -292,45 +327,57 @@ const Movimentacao = () => {
     }
   };
 
-  // Salvar todas as movimentações em lote (form várias linhas)
+  // Salvar várias movimentações em lote
   const handleSaveAllMovements = async () => {
     try {
       setLoadingAction(true);
 
-      // Converte cada item (tempMovements) no formato esperado pela API
+      // Monta lista para a API
       const listaDeMovimentos = tempMovements.map((item) => ({
         tipo: item.tipo,
         forma: item.forma,
         valor: parseFloat(item.valor.replace(",", ".")),
         descricao: item.descricao,
         paymentStatus: item.paymentStatus,
-        moedasEntrada: item.forma === "dinheiro" ? Number(item.moedasEntrada || 0) : 0,
-        moedasSaida: item.forma === "dinheiro" ? Number(item.moedasSaida || 0) : 0
+        //data: format(selectedDate, "yyyy-MM-dd"),
+        data: toMidnightUTCISO(selectedDate),
+        moedasEntrada:
+          item.forma === "dinheiro" ? Number(item.moedasEntrada || 0) : 0,
+        moedasSaida:
+          item.forma === "dinheiro" ? Number(item.moedasSaida || 0) : 0
       }));
 
       const response = await api.createMovementsBatch(unidadeId, caixaId, listaDeMovimentos);
 
-      Swal.fire({
-        icon: "success",
-        title: "Todas as movimentações foram salvas!",
-        showConfirmButton: false,
-        timer: 1500
-      });
+      if (response.success) {
+        Swal.fire({
+          icon: "success",
+          title: "Todas as movimentações foram salvas!",
+          showConfirmButton: false,
+          timer: 1500
+        });
 
-      fetchMovements(selectedDate);
-
-      // Zera o form em lote
-      setTempMovements([
-        {
-          tipo: "entrada",
-          forma: "",
-          valor: "",
-          descricao: "",
-          paymentStatus: "realizado",
-          moedasEntrada: "",
-          moedasSaida: ""
-        }
-      ]);
+        fetchMovements(selectedDate);
+        // Zera o form de lote
+        setTempMovements([
+          {
+            tipo: "entrada",
+            forma: "",
+            valor: "",
+            descricao: "",
+            paymentStatus: "realizado",
+            moedasEntrada: "",
+            moedasSaida: ""
+          }
+        ]);
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Erro ao salvar em lote",
+          text: response.error || "Verifique os dados e tente novamente",
+          showConfirmButton: true
+        });
+      }
     } catch (error) {
       Swal.fire({
         icon: "error",
@@ -343,7 +390,7 @@ const Movimentacao = () => {
     }
   };
 
-  // Deletar uma movimentação
+  // Deletar movimentação
   const handleDeleteMovement = async (id) => {
     try {
       const result = await Swal.fire({
@@ -404,9 +451,9 @@ const Movimentacao = () => {
     }
   };
 
-  // -----------------------------
-  // TROCAR DE ABA E ALTERAR DATA
-  // -----------------------------
+  // ---------------------------------------------
+  // Troca de aba e alteração de data
+  // ---------------------------------------------
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
   };
@@ -416,20 +463,35 @@ const Movimentacao = () => {
     fetchMovements(newDate);
   };
 
-  // -----------------------------
-  // FUNÇÃO RETORNAR
-  // -----------------------------
+  // ---------------------------------------------
+  // Botão Voltar
+  // ---------------------------------------------
   const handleGoBack = () => {
     navigate(`/unidade/${unidadeId}/caixas`);
   };
 
-  // -----------------------------
-  // CARREGAMENTO INICIAL
-  // -----------------------------
+  // ---------------------------------------------
+  // Carregamento inicial
+  // ---------------------------------------------
   useEffect(() => {
     if (!auth.user) {
       navigate("/login");
       return;
+    } else {
+      if (!auth.user.superusuario) {
+        const allowedUnits = auth.user.selectedUnits || [];
+        if (!allowedUnits.includes(unidadeId)) {
+          Swal.fire({
+            icon: "error",
+            title: "Acesso Negado",
+            text: "Você não tem permissão para acessar esta unidade.",
+            showConfirmButton: true
+          }).then(() => {
+            navigate("/");
+          });
+          return;
+        }
+      }
     }
 
     if (!unidadeId || !caixaId) {
@@ -445,16 +507,23 @@ const Movimentacao = () => {
       return;
     }
 
-    fetchCaixaInfo();
-    fetchUnidadeInfo();
-    fetchMovements(selectedDate);
+    const doFetch = async () => {
+      await fetchCaixaInfo();
+      await fetchUnidadeInfo();
+      await fetchMovements(selectedDate);
+      await loadPaymentMethods();
+    };
+
+    doFetch();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unidadeId, caixaId, auth.user]);
 
   // Renderização com tratamento de loading/error
   if (loading && !error) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "60vh" }}>
+      <Box
+        sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "60vh" }}
+      >
         <CircularProgress size={60} />
       </Box>
     );
@@ -464,7 +533,7 @@ const Movimentacao = () => {
     <div style={{ padding: "1rem" }}>
       <Card>
         <CardContent>
-          {/* Cabeçalho responsivo */}
+          {/* Cabeçalho e Data Picker */}
           <Box
             sx={{
               display: "flex",
@@ -479,7 +548,6 @@ const Movimentacao = () => {
               <IconButton onClick={handleGoBack} sx={{ color: "#f4b400" }}>
                 <ArrowBackIosIcon />
               </IconButton>
-
               <Typography variant="h5" component="h1">
                 {caixaInfo ? `Movimentação - Caixa ${caixaInfo.numero}` : "Movimentação do Caixa"}
               </Typography>
@@ -495,29 +563,6 @@ const Movimentacao = () => {
                   maxDate={new Date()}
                 />
               </LocalizationProvider>
-
-              {/* Botões de ícone (opcionais) */}
-              {/* 
-              <IconButton
-                sx={{
-                  bgcolor: "primary.main",
-                  color: "white",
-                  "&:hover": { bgcolor: "primary.dark" }
-                }}
-              >
-                <PhotoCameraIcon />
-              </IconButton>
-
-              <IconButton
-                sx={{
-                  bgcolor: "success.main",
-                  color: "white",
-                  "&:hover": { bgcolor: "success.dark" }
-                }}
-              >
-                <TableChartIcon />
-              </IconButton> 
-              */}
             </Box>
           </Box>
 
@@ -559,7 +604,7 @@ const Movimentacao = () => {
           )}
 
           <Box sx={{ mt: 2 }}>
-            {/* Aba 0: Registrar Movimentação */}
+            {/* ABA 0: Registrar Movimentação individual */}
             {tabValue === 0 && (
               <Box
                 sx={{
@@ -573,23 +618,22 @@ const Movimentacao = () => {
                   <FormularioMovimentacao
                     newMovement={newMovement}
                     setNewMovement={setNewMovement}
-                    paymentMethods={paymentMethods}
-                    // Passamos handleAddMovement, que recebe também o arquivo de imagem
                     onAddMovement={handleAddMovement}
                     loading={loadingAction}
+                    allPaymentMethods={allPaymentMethods}
                   />
                 </Box>
                 <Box sx={{ width: { xs: "100%", md: "250px" } }}>
                   <ResumoMovimentacao
                     movements={movements}
-                    paymentMethods={paymentMethods}
                     loading={loading}
+                    paymentMethods={allPaymentMethods}
                   />
                 </Box>
               </Box>
             )}
 
-            {/* Aba 1: Registro em Lotes */}
+            {/* ABA 1: Registro em Lotes */}
             {tabValue === 1 && (
               <Box
                 sx={{
@@ -604,11 +648,12 @@ const Movimentacao = () => {
                     tempMovements={tempMovements}
                     onTempMovementsChange={setTempMovements}
                     onSaveAll={handleSaveAllMovements}
-                    paymentMethods={paymentMethods}
+                    paymentMethods={allPaymentMethods}
                   />
                 </Box>
                 <Box sx={{ width: { xs: "100%", md: "250px" } }}>
                   {(() => {
+                    // Combina as movimentações existentes + as temporárias para exibir no resumo
                     const combinedMovements = [
                       ...movements,
                       ...tempMovements.map((item) => ({
@@ -629,8 +674,8 @@ const Movimentacao = () => {
                     return (
                       <ResumoMovimentacao
                         movements={combinedMovements}
-                        paymentMethods={paymentMethods}
                         loading={loading}
+                        paymentMethods={allPaymentMethods}
                       />
                     );
                   })()}
@@ -638,13 +683,13 @@ const Movimentacao = () => {
               </Box>
             )}
 
-            {/* Aba 2: Histórico */}
+            {/* ABA 2: Histórico de Movimentações */}
             {tabValue === 2 && (
               <HistoricoMovimentacao
                 movements={movements}
-                paymentMethods={paymentMethods}
                 onDeleteMovement={handleDeleteMovement}
                 loading={loading}
+                paymentMethods={allPaymentMethods}
               />
             )}
           </Box>
