@@ -1,0 +1,186 @@
+{
+  "timestamp": "2025-05-03T20:43:15.341Z",
+  "summary": {
+    "successful": 10,
+    "failed": 16,
+    "total": 26
+  },
+  "methodAnalysis": {
+    "POST": {
+      "success": 8,
+      "failure": 0
+    },
+    "PUT": {
+      "success": 2,
+      "failure": 0
+    },
+    "GET": {
+      "success": 0,
+      "failure": 13
+    },
+    "DELETE": {
+      "success": 0,
+      "failure": 3
+    }
+  },
+  "successful": [
+    {
+      "endpoint": "POST /unidades/XnCTtFGMoAcAS9sZe4wv/caixas",
+      "description": "Create a new caixa",
+      "status": 201,
+      "message": "Caixa criado com sucesso"
+    },
+    {
+      "endpoint": "POST /despesasCategorias",
+      "description": "Create a new despesa categoria",
+      "status": 201,
+      "message": "Categoria de despesa criada com sucesso"
+    },
+    {
+      "endpoint": "PUT /despesasCategorias/categoria_teste_1746304994101",
+      "description": "Update despesa categoria",
+      "status": 200,
+      "message": "Categoria de despesa atualizada com sucesso"
+    },
+    {
+      "endpoint": "POST /paymentMethods",
+      "description": "Create a new payment method",
+      "status": 201,
+      "message": "Método de pagamento criado com sucesso"
+    },
+    {
+      "endpoint": "PUT /paymentMethods/dinheiro_payment_method_test_1746304994355",
+      "description": "Update payment method",
+      "status": 200,
+      "message": "Método de pagamento atualizado com sucesso"
+    },
+    {
+      "endpoint": "POST /unidades/XnCTtFGMoAcAS9sZe4wv/caixas/008/movimentos",
+      "description": "Create a new movimento (entrada)",
+      "status": 201,
+      "message": "Movimento registrado"
+    },
+    {
+      "endpoint": "POST /unidades/XnCTtFGMoAcAS9sZe4wv/caixas/008/movimentos/lote",
+      "description": "Create batch movimentos",
+      "status": 201,
+      "message": "Batch criado"
+    },
+    {
+      "endpoint": "POST /unidades/XnCTtFGMoAcAS9sZe4wv/caixas/008/pagamentos",
+      "description": "Create a new pagamento",
+      "status": 201,
+      "message": "Pagamento registrado com sucesso"
+    },
+    {
+      "endpoint": "POST /unidades/XnCTtFGMoAcAS9sZe4wv/caixas/008/pagamentos/tickets",
+      "description": "Create a new ticket",
+      "status": 201,
+      "message": "Ticket registrado com sucesso"
+    },
+    {
+      "endpoint": "POST /logs",
+      "description": "Create a new log",
+      "status": 201,
+      "message": "Log registrado com sucesso"
+    }
+  ],
+  "failed": [
+    {
+      "endpoint": "GET /health",
+      "description": "API Health Check",
+      "status": 400,
+      "message": "{\"error\":\"Invalid JSON\"}"
+    },
+    {
+      "endpoint": "GET /unidades",
+      "description": "List all units",
+      "status": 400,
+      "message": "{\"error\":\"Invalid JSON\"}"
+    },
+    {
+      "endpoint": "GET /unidades/XnCTtFGMoAcAS9sZe4wv",
+      "description": "Get test unit details",
+      "status": 400,
+      "message": "{\"error\":\"Invalid JSON\"}"
+    },
+    {
+      "endpoint": "GET /unidades/XnCTtFGMoAcAS9sZe4wv/caixas",
+      "description": "List all caixas for test unit",
+      "status": 400,
+      "message": "{\"error\":\"Invalid JSON\"}"
+    },
+    {
+      "endpoint": "GET /despesasCategorias",
+      "description": "List all despesas categorias",
+      "status": 400,
+      "message": "{\"error\":\"Invalid JSON\"}"
+    },
+    {
+      "endpoint": "DELETE /despesasCategorias/categoria_teste_1746304994101",
+      "description": "Delete despesa categoria",
+      "status": 400,
+      "message": "{\"error\":\"Invalid JSON\"}"
+    },
+    {
+      "endpoint": "GET /paymentMethods",
+      "description": "List all payment methods",
+      "status": 400,
+      "message": "{\"error\":\"Invalid JSON\"}"
+    },
+    {
+      "endpoint": "DELETE /paymentMethods/dinheiro_payment_method_test_1746304994355",
+      "description": "Delete payment method",
+      "status": 400,
+      "message": "{\"error\":\"Invalid JSON\"}"
+    },
+    {
+      "endpoint": "GET /usuarios",
+      "description": "List all usuarios",
+      "status": 400,
+      "message": "{\"error\":\"Invalid JSON\"}"
+    },
+    {
+      "endpoint": "GET /unidades/XnCTtFGMoAcAS9sZe4wv/caixas/008/movimentos",
+      "description": "List all movimentos",
+      "status": 400,
+      "message": "{\"error\":\"Invalid JSON\"}"
+    },
+    {
+      "endpoint": "DELETE /unidades/XnCTtFGMoAcAS9sZe4wv/caixas/008/movimentos/000001",
+      "description": "Delete movimento",
+      "status": 400,
+      "message": "{\"error\":\"Invalid JSON\"}"
+    },
+    {
+      "endpoint": "GET /unidades/XnCTtFGMoAcAS9sZe4wv/caixas/008/pagamentos",
+      "description": "List all pagamentos",
+      "status": 400,
+      "message": "{\"error\":\"Invalid JSON\"}"
+    },
+    {
+      "endpoint": "GET /unidades/XnCTtFGMoAcAS9sZe4wv/caixas/008/pagamentos/jpR5PfbtqtWgPhktjnHc",
+      "description": "Get pagamento details",
+      "status": 400,
+      "message": "{\"error\":\"Invalid JSON\"}"
+    },
+    {
+      "endpoint": "GET /unidades/XnCTtFGMoAcAS9sZe4wv/valores-a-receber",
+      "description": "List valores a receber",
+      "status": 400,
+      "message": "{\"error\":\"Invalid JSON\"}"
+    },
+    {
+      "endpoint": "GET /unidades/XnCTtFGMoAcAS9sZe4wv/relatorios/pagamentos",
+      "description": "Generate payment report",
+      "status": 400,
+      "message": "{\"error\":\"Invalid JSON\"}"
+    },
+    {
+      "endpoint": "GET /logs",
+      "description": "List all logs",
+      "status": 400,
+      "message": "{\"error\":\"Invalid JSON\"}"
+    }
+  ]
+}
