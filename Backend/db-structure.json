@@ -1,0 +1,584 @@
+{
+  "structure": {
+    "collections": {
+      "Users": {
+        "documents": {
+          "4frEZiB2R1RcvaAw2TsydVfZWmH3": {
+            "fields": {
+              "uuidCriador": {
+                "type": "string",
+                "example": "jwx5473wunaycoDgiIsghRohOkz2"
+              },
+              "name": {
+                "type": "string",
+                "example": "Caio"
+              },
+              "email": {
+                "type": "string",
+                "example": "caiosazeredo@cos.ufrj.br"
+              },
+              "cpf": {
+                "type": "string",
+                "example": "135.875.027-08"
+              },
+              "phone": {
+                "type": "string",
+                "example": "(21) 40028-8922"
+              },
+              "role": {
+                "type": "string",
+                "example": "Suporte"
+              },
+              "superusuario": {
+                "type": "boolean",
+                "example": false
+              },
+              "selectedUnits": {
+                "type": "array",
+                "example": "[Object]"
+              },
+              "createdAt": {
+                "type": "string",
+                "example": "2025-03-02T21:14:35.518Z"
+              },
+              "ultimoAcesso": {
+                "type": "null",
+                "example": null
+              },
+              "primeiroAcesso": {
+                "type": "boolean",
+                "example": false
+              },
+              "ativo": {
+                "type": "boolean",
+                "example": true
+              }
+            },
+            "subcollections": []
+          },
+          "A6h6g9GYnZeYbhvPr2PnWnSNtao2": {
+            "fields": {
+              "uuidCriador": {
+                "type": "string",
+                "example": "jwx5473wunaycoDgiIsghRohOkz2"
+              },
+              "name": {
+                "type": "string",
+                "example": "Caio"
+              },
+              "email": {
+                "type": "string",
+                "example": "caiosilvaazeredo@hotmail.com"
+              },
+              "cpf": {
+                "type": "string",
+                "example": "135.875.027-06"
+              },
+              "phone": {
+                "type": "string",
+                "example": "(21) 40028-8922"
+              },
+              "role": {
+                "type": "string",
+                "example": "Suporte"
+              },
+              "superusuario": {
+                "type": "boolean",
+                "example": false
+              },
+              "selectedUnits": {
+                "type": "array",
+                "example": "[Object]"
+              },
+              "createdAt": {
+                "type": "string",
+                "example": "2025-03-02T20:46:57.000Z"
+              },
+              "ultimoAcesso": {
+                "type": "null",
+                "example": null
+              },
+              "ativo": {
+                "type": "boolean",
+                "example": true
+              }
+            },
+            "subcollections": []
+          },
+          "C2SW737VbxOCYnIcTKeJ3Mi52dZ2": {
+            "fields": {
+              "selectedUnits": {
+                "type": "array",
+                "example": "[Object]"
+              },
+              "uuidCriador": {
+                "type": "string",
+                "example": "jwx5473wunaycoDgiIsghRohOkz2"
+              },
+              "name": {
+                "type": "string",
+                "example": "Felipe teste"
+              },
+              "email": {
+                "type": "string",
+                "example": "lyrio.fe@gmail.com"
+              },
+              "cpf": {
+                "type": "string",
+                "example": "222.222.222-22"
+              },
+              "phone": {
+                "type": "string",
+                "example": "(22) 22222-2222"
+              },
+              "role": {
+                "type": "string",
+                "example": "Adm"
+              },
+              "superusuario": {
+                "type": "boolean",
+                "example": true
+              },
+              "createdAt": {
+                "type": "string",
+                "example": "2025-03-15T22:21:06.464Z"
+              },
+              "ativo": {
+                "type": "boolean",
+                "example": true
+              }
+            },
+            "subcollections": []
+          },
+          "aJuRDtIy2Egdktsf0Zk0izgb7sJ3": {
+            "fields": {
+              "uuidCriador": {
+                "type": "string",
+                "example": "jwx5473wunaycoDgiIsghRohOkz2"
+              },
+              "email": {
+                "type": "string",
+                "example": "teste3@gmail.com"
+              },
+              "cpf": {
+                "type": "string",
+                "example": "111.111.111-11"
+              },
+              "phone": {
+                "type": "string",
+                "example": "(22) 22222-2222"
+              },
+              "role": {
+                "type": "string",
+                "example": "teste 3 cargo"
+              },
+              "createdAt": {
+                "type": "string",
+                "example": "2025-02-14T03:58:22.579Z"
+              },
+              "ativo": {
+                "type": "boolean",
+                "example": true
+              },
+              "selectedUnits": {
+                "type": "array",
+                "example": "[Object]"
+              },
+              "name": {
+                "type": "string",
+                "example": "teste 33"
+              },
+              "isSuperUser": {
+                "type": "boolean",
+                "example": false
+              },
+              "updatedAt": {
+                "type": "string",
+                "example": "2025-03-06T03:07:11.547Z"
+              }
+            },
+            "subcollections": []
+          },
+          "c0cmSD0MAIO43kxrp5ynOYP7Ruw2": {
+            "fields": {
+              "uuidCriador": {
+                "type": "string",
+                "example": "jwx5473wunaycoDgiIsghRohOkz2"
+              },
+              "name": {
+                "type": "string",
+                "example": "Caio"
+              },
+              "email": {
+                "type": "string",
+                "example": "caiosilvaazeredo@gmail.com"
+              },
+              "cpf": {
+                "type": "string",
+                "example": "135.875.027-06"
+              },
+              "phone": {
+                "type": "string",
+                "example": "(21) 40028-8922"
+              },
+              "role": {
+                "type": "string",
+                "example": "Suporte"
+              },
+              "isSuperUser": {
+                "type": "boolean",
+                "example": false
+              },
+              "selectedUnits": {
+                "type": "array",
+                "example": "[Object]"
+              },
+              "createdAt": {
+                "type": "string",
+                "example": "2025-03-02T20:27:46.563Z"
+              },
+              "ativo": {
+                "type": "boolean",
+                "example": true
+              }
+            },
+            "subcollections": []
+          }
+        }
+      },
+      "logs": {
+        "documents": {
+          "08t62ru2DkrAuiKzfq5b": {
+            "fields": {
+              "uuidUser": {
+                "type": "string",
+                "example": "jz9AYMqY2fQBOacINUvimNBJg0n2"
+              },
+              "funcionalidade": {
+                "type": "string",
+                "example": "Listar Movimentos"
+              },
+              "status": {
+                "type": "string",
+                "example": "success"
+              },
+              "mensagem": {
+                "type": "string",
+                "example": "Listagem de movimentos realizada"
+              },
+              "detalhes": {
+                "type": "object",
+                "example": "[Object]"
+              },
+              "timestamp": {
+                "type": "string",
+                "example": "2025-03-30T15:50:51.934Z"
+              }
+            },
+            "subcollections": []
+          },
+          "08z2oQRVWe4zhV6HIeOn": {
+            "fields": {
+              "uuidUser": {
+                "type": "string",
+                "example": "jwx5473wunaycoDgiIsghRohOkz2"
+              },
+              "funcionalidade": {
+                "type": "string",
+                "example": "Listagem de Unidades"
+              },
+              "status": {
+                "type": "string",
+                "example": "success"
+              },
+              "mensagem": {
+                "type": "string",
+                "example": "Usuário listou todas as unidades"
+              },
+              "detalhes": {
+                "type": "object",
+                "example": "[Object]"
+              },
+              "timestamp": {
+                "type": "string",
+                "example": "2025-03-20T03:02:17.924Z"
+              }
+            },
+            "subcollections": []
+          },
+          "09IC6VlaAdaqpjCBeNx1": {
+            "fields": {
+              "uuidUser": {
+                "type": "string",
+                "example": "jz9AYMqY2fQBOacINUvimNBJg0n2"
+              },
+              "funcionalidade": {
+                "type": "string",
+                "example": "Listar Movimentos"
+              },
+              "status": {
+                "type": "string",
+                "example": "success"
+              },
+              "mensagem": {
+                "type": "string",
+                "example": "Listagem de movimentos realizada"
+              },
+              "detalhes": {
+                "type": "object",
+                "example": "[Object]"
+              },
+              "timestamp": {
+                "type": "string",
+                "example": "2025-04-08T04:36:01.555Z"
+              }
+            },
+            "subcollections": []
+          },
+          "0CZ94eQagAVkpJlsebdC": {
+            "fields": {
+              "uuidUser": {
+                "type": "string",
+                "example": "jz9AYMqY2fQBOacINUvimNBJg0n2"
+              },
+              "funcionalidade": {
+                "type": "string",
+                "example": "Listar Movimentos"
+              },
+              "status": {
+                "type": "string",
+                "example": "success"
+              },
+              "mensagem": {
+                "type": "string",
+                "example": "Listagem de movimentos realizada"
+              },
+              "detalhes": {
+                "type": "object",
+                "example": "[Object]"
+              },
+              "timestamp": {
+                "type": "string",
+                "example": "2025-04-09T03:03:16.380Z"
+              }
+            },
+            "subcollections": []
+          },
+          "0Gfvc7Mpszr2zrPqdSeD": {
+            "fields": {
+              "uuidUser": {
+                "type": "string",
+                "example": "jz9AYMqY2fQBOacINUvimNBJg0n2"
+              },
+              "funcionalidade": {
+                "type": "string",
+                "example": "Busca de Unidade"
+              },
+              "status": {
+                "type": "string",
+                "example": "success"
+              },
+              "mensagem": {
+                "type": "string",
+                "example": "Usuário buscou uma unidade"
+              },
+              "detalhes": {
+                "type": "object",
+                "example": "[Object]"
+              },
+              "timestamp": {
+                "type": "string",
+                "example": "2025-03-21T17:05:37.260Z"
+              }
+            },
+            "subcollections": []
+          }
+        }
+      },
+      "test-connection": {
+        "documents": {
+          "test": {
+            "fields": {
+              "timestamp": {
+                "type": "string",
+                "example": "2025-03-04T15:17:33.703Z"
+              }
+            },
+            "subcollections": []
+          }
+        }
+      },
+      "unidades": {
+        "documents": {
+          "001": {
+            "fields": {
+              "id": {
+                "type": "string",
+                "example": "001"
+              },
+              "nome": {
+                "type": "string",
+                "example": "São Gonçalo"
+              },
+              "endereco": {
+                "type": "string",
+                "example": "string"
+              },
+              "telefone": {
+                "type": "string",
+                "example": "string"
+              },
+              "dataCriacao": {
+                "type": "timestamp",
+                "example": {
+                  "_type": "timestamp",
+                  "value": "2025-01-20T17:59:53.184Z"
+                }
+              },
+              "ativo": {
+                "type": "boolean",
+                "example": true
+              }
+            },
+            "subcollections": [
+              "caixas"
+            ]
+          },
+          "002": {
+            "fields": {
+              "id": {
+                "type": "string",
+                "example": "002"
+              },
+              "nome": {
+                "type": "string",
+                "example": "Campo Grande"
+              },
+              "endereco": {
+                "type": "string",
+                "example": "string"
+              },
+              "telefone": {
+                "type": "string",
+                "example": "string"
+              },
+              "dataCriacao": {
+                "type": "timestamp",
+                "example": {
+                  "_type": "timestamp",
+                  "value": "2025-01-20T18:04:42.562Z"
+                }
+              },
+              "ativo": {
+                "type": "boolean",
+                "example": true
+              }
+            },
+            "subcollections": [
+              "caixas"
+            ]
+          },
+          "003": {
+            "fields": {
+              "id": {
+                "type": "string",
+                "example": "003"
+              },
+              "nome": {
+                "type": "string",
+                "example": "Campo Grande"
+              },
+              "endereco": {
+                "type": "string",
+                "example": "Rua das couves"
+              },
+              "telefone": {
+                "type": "string",
+                "example": "4002-0001"
+              },
+              "dataCriacao": {
+                "type": "timestamp",
+                "example": {
+                  "_type": "timestamp",
+                  "value": "2025-01-20T18:39:58.925Z"
+                }
+              },
+              "ativo": {
+                "type": "boolean",
+                "example": true
+              }
+            },
+            "subcollections": [
+              "caixas"
+            ]
+          },
+          "004": {
+            "fields": {
+              "id": {
+                "type": "string",
+                "example": "004"
+              },
+              "nome": {
+                "type": "string",
+                "example": "Unidade Teste"
+              },
+              "endereco": {
+                "type": "string",
+                "example": "Rua de Teste, 123"
+              },
+              "telefone": {
+                "type": "string",
+                "example": "(21) 99999-9999"
+              },
+              "dataCriacao": {
+                "type": "timestamp",
+                "example": {
+                  "_type": "timestamp",
+                  "value": "2025-03-04T15:04:02.011Z"
+                }
+              },
+              "ativo": {
+                "type": "boolean",
+                "example": true
+              }
+            },
+            "subcollections": []
+          },
+          "005": {
+            "fields": {
+              "id": {
+                "type": "string",
+                "example": "005"
+              },
+              "nome": {
+                "type": "string",
+                "example": "Unidade Teste"
+              },
+              "endereco": {
+                "type": "string",
+                "example": "Rua de Teste, 123"
+              },
+              "telefone": {
+                "type": "string",
+                "example": "(21) 99999-9999"
+              },
+              "dataCriacao": {
+                "type": "timestamp",
+                "example": {
+                  "_type": "timestamp",
+                  "value": "2025-03-04T15:09:59.362Z"
+                }
+              },
+              "ativo": {
+                "type": "boolean",
+                "example": true
+              }
+            },
+            "subcollections": []
+          }
+        }
+      }
+    }
+  },
+  "timestamp": "2025-04-14T05:51:13.861Z"
+}
